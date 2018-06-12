@@ -55,6 +55,7 @@ for path in paths:
         paths_for_test.append(path)
     else:
         paths_for_train.append(path)
+print('Found {} files for training.'.format(len(paths_for_train)))
 
 if __name__ == '__main__':
     for path in paths_for_train:
