@@ -59,6 +59,4 @@ for path in paths:
 if __name__ == '__main__':
     for path in paths_for_train:
         features_for_svm = prepare_one_image_to_classify(path)
-        print(features_for_svm)
-        break
         np.save(path.split('/')[-1][:-4], features_for_svm)
