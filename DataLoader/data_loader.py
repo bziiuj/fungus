@@ -19,7 +19,7 @@ class FungusDataset(Dataset):
     def __getitem__(self, idx):
         img_class = self.fungus_paths[int(idx // self.crop)].split('/')[-1][:2]
         image = io.imread(self.fungus_paths[int(idx // self.crop)])
-        h, w, d = image.shape
+        h, w = image.shape
 
         if self.crop > 1:
             coeff_start = idx % self.crop
@@ -28,7 +28,7 @@ class FungusDataset(Dataset):
             stop_pos_h = int(h / self.crop * coeff_stop)
             start_pos_w = int(w / self.crop * coeff_start)
             stop_pos_w = int(w / self.crop * coeff_stop)
-            image = image[start_pos_h:stop_pos_h, start_pos_w:stop_pos_w, :]
+            image = image[start_pos_h:stop_pos_h, start_pos_w:stop_pos_w]
 
         scaled = None
 
@@ -46,10 +46,10 @@ if __name__ == '__main__':
     from glob import glob
     from matplotlib import pyplot as plt
 
-    paths = glob('../fungus_stretched/*/*1*')
-    # data = FungusDataset(paths, scale=8)
+    paths = glob('../pngs/*/*1*')
+    data = FungusDataset(paths, scale=8)
     # data = FungusDataset(paths)
-    data = FungusDataset(paths, crop=8)
+    # data = FungusDataset(paths, crop=8)
     dl = DataLoader(data, batch_size=2, shuffle=True, num_workers=2)
 
     for i_batch, sample_batched in enumerate(dl):
