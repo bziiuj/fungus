@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import torch
 import yaml
+from cyvlfeat.fisher import fisher
 from cyvlfeat.gmm import gmm
 from skimage import io
 from sklearn.svm import SVC
@@ -13,21 +14,25 @@ from torch import nn
 from torchvision import models
 
 
+def get_cuda_if_available():
+    if torch.cuda.is_available():
+        device = torch.device('cuda:0')
+        return device
+    return torch.device('cpu')
+
+
 def read_image(path):
     image = io.imread(path).astype(np.float32)
-    # Move channels to the first dimension
-    image = np.moveaxis(image, -1, 0)
+    # TODO alexnet does not accept grayscale
+    if len(image.shape) == 2:
+        image = np.expand_dims(image, axis=0)
+    else:
+        # Move channels to the first dimension
+        image = np.moveaxis(image, -1, 0)
     # Normalize to [0, 1]
     image /= 256
     tensor = torch.from_numpy(image)
     return tensor
-
-
-def prepare_one_image_to_classify(path):
-    image_tensor = image_read(path)
-    model = model_init()
-    data = extract_features(image_tensor, model)
-    return data
 
 
 def read_config():
@@ -67,20 +72,37 @@ def extract_features(extractor, images):
 
 if __name__ == '__main__':
     config = read_config()
+    device = get_cuda_if_available()
     print('Splitting data paths...')
     train_paths, test_paths = split_data_paths(config)
     print('Getting feature extractor...')
-    feature_extractor = get_feature_extractor()
-    feature_extractor.eval()
+    feature_extractor = get_feature_extractor().eval().to(device)
     with torch.no_grad():
         print('Extracting features...')
         train_features = []
+        train_labels = []
         for path in train_paths:
-            image = torch.unsqueeze(read_image(path), dim=0)
+            train_labels.append(path.split('/')[-2])
+            image = torch.unsqueeze(read_image(path), dim=0).to(device)
             image_features = extract_features(feature_extractor, image)
             train_features.append(image_features)
         train_features = torch.cat(train_features, dim=0)
-        print(train_features.size())
+        print('train_features', train_features.size())
         print('Fitting gmm...')
-        priors, means, covars, ll, posteriors = gmm(
-            train_features, n_clusters=1, init_mode='rand')
+        means, covars, priors, ll, posteriors = gmm(
+            train_features, n_clusters=2, init_mode='rand')
+        means = np.transpose(means)
+        covars = np.transpose(covars)
+        print(means.shape, covars.shape, priors.shape, posteriors.shape)
+        print('Computing Fisher vectors...')
+        fisher_vectors = []
+        for features in train_features:
+            features = torch.unsqueeze(features, dim=1).cpu().numpy()
+            print(features.shape)
+            fv = fisher(features, means, covars, priors)
+            fisher_vectors.append(fv)
+        fisher_vectors = np.stack(fisher_vectors)
+        print(fisher_vectors.shape)
+    print('Training classifier...')
+    classifier = SVC()
+    classifier.fit(fisher_vectors, train_labels)
