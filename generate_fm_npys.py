@@ -45,6 +45,7 @@ def read_config():
 
 
 def split_data_paths(config):
+    print('Splitting data paths...')
     paths = glob(config['data_path'] + '/*/*')
     train_paths = []
     test_paths = []
@@ -61,55 +62,67 @@ def split_data_paths(config):
 
 
 def get_feature_extractor():
+    print('Getting feature extractor...')
     model = models.alexnet(pretrained=True)
-    extractor = model.features
+    extractor = model.features.eval()
     return extractor
 
 
-def extract_features(extractor, images):
-    features = extractor(images)
-    return extractor(images)
+def extract_features(images, extractor):
+    print('Extracting features...')
+    res = []
+    for image in images:
+        features = extractor(image.unsqueeze(dim=0))
+        _, C, W, H = features.size()
+        res.append(features.reshape(-1, C, W * H).transpose_(1, 2))
+    res = torch.cat(res, dim=0)
+    print('train_features', res.size())
+    return res
+
+
+def fit_gmm(X):
+    print('Fitting gmm...')
+    means, covars, priors, ll, posteriors = gmm(
+        X.reshape(-1, X.size()[2]), n_clusters=2, init_mode='rand')
+    means = means.transpose()
+    covars = covars.transpose()
+    print(means.shape, covars.shape, priors.shape, posteriors.shape)
+    return (means, covars, priors)
+
+
+def compute_fisher_vectors(images_features, gmm):
+    print('Computing Fisher vectors...')
+    means, covars, priors = gmm
+    res = []
+    for features in images_features:
+        features = features.cpu().numpy().transpose()
+        print(features.shape)
+        fv = fisher(features, means, covars, priors)
+        res.append(fv)
+    res = np.stack(res)
+    print(res.shape)
+    return res
+
+
+def train_classifier(X, y):
+    print('Training classifier...')
+    clf = SVC()
+    clf.fit(X, y)
+    return clf
 
 
 if __name__ == '__main__':
     config = read_config()
     device = get_cuda_if_available()
-    print('Splitting data paths...')
     train_paths, test_paths = split_data_paths(config)
-    print('Getting feature extractor...')
-    feature_extractor = get_feature_extractor().eval().to(device)
+    extractor = get_feature_extractor().to(device)
     with torch.no_grad():
-        print('Extracting features...')
-        train_features = []
-        train_labels = []
-        for path in train_paths:
-            train_labels.append(path.split('/')[-2])
-            image = torch.unsqueeze(read_image(path), dim=0).to(device)
-            image_features = extract_features(feature_extractor, image)
-            _, C, W, H = image_features.size()
-            image_features = image_features.reshape(
-                -1, C, W * H).transpose_(1, 2)
-            train_features.append(image_features)
-        train_features = torch.cat(train_features, dim=0)
-        print('train_features', train_features.size())
-        print('Fitting gmm...')
-        means, covars, priors, ll, posteriors = gmm(
-            train_features.reshape(-1, train_features.size()[2]), n_clusters=2, init_mode='rand')
-        means = np.transpose(means)
-        covars = np.transpose(covars)
-        print(means.shape, covars.shape, priors.shape, posteriors.shape)
-        print('Computing Fisher vectors...')
-        fisher_vectors = []
-        for features in train_features:
-            features = features.cpu().numpy().transpose()
-            print(features.shape)
-            fv = fisher(features, means, covars, priors)
-            fisher_vectors.append(fv)
-        fisher_vectors = np.stack(fisher_vectors)
-        print(fisher_vectors.shape)
-    print('Training classifier...')
-    classifier = SVC(C=10)
-    classifier.fit(fisher_vectors, train_labels)
+        train_labels = [path.split('/')[-2] for path in train_paths]
+        images = [read_image(path).to(device) for path in train_paths]
+        train_features = extract_features(images, extractor)
+        gmm = fit_gmm(train_features)
+        fisher_vectors = compute_fisher_vectors(train_features, gmm)
+    classifier = train_classifier(fisher_vectors, train_labels)
     print('Calculating training accuracy...')
     y_pred = classifier.predict(fisher_vectors)
     print(train_labels)
