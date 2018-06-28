@@ -16,20 +16,22 @@ class FungusDataset(Dataset):
             transform=normalize_image,
             scale=None,
             crop=1,
-            random_crop_with_background=125,
+            random_crop_size=125,
+            number_of_bg_slices_per_image=0,
+            number_of_fg_slices_per_image=8,
     ):
 
         self.fungus_paths = paths
         self.transform = transform
         self.scale = scale
         self.crop = crop
-        self.random_crop_with_background = random_crop_with_background
+        self.random_crop_size = random_crop_size
         self.maps_paths = maps_paths
+        self.bg_per_img = number_of_bg_slices_per_image
+        self.fg_per_img = number_of_fg_slices_per_image
 
     def __len__(self):
-        if self.random_crop_with_background:
-            return len(self.fungus_paths) * self.crop * 2
-        return len(self.fungus_paths) * self.crop
+        return len(self.fungus_paths) * self.crop * (self.fg_per_img + self.bg_per_img)
 
     def __getitem__(self, idx):
         image, img_class = self.get_image_and_image_class(idx)
@@ -39,26 +41,39 @@ class FungusDataset(Dataset):
             image = self.crop_image(h, idx, image, w)
 
         scaled = None
+        bg_fg = 1
 
         if self.transform:
             if self.scale:
                 scaled = (int(h // self.scale), int(w // self.scale))
 
-            if self.random_crop_with_background:
-                mask = io.imread(self.maps_paths[int(idx / self.crop / 2)])
-                if idx % 2 == 1:
-                    where = np.argwhere(mask == 2)
-                else:
-                    where = np.argwhere(mask == 1)
+            mask = io.imread(self.maps_paths[int(idx / self.crop / (self.bg_per_img + self.fg_per_img))])
+            if (idx % (self.bg_per_img + self.fg_per_img)) > self.bg_per_img:
+                where = np.argwhere(mask == 2)
+                bg_fg = 1
+            elif 1 in mask:
+                where = np.argwhere(mask == 1)
+                bg_fg = 0
+            else:
+                raise Warning("No background on image. Only fg will be returned")
+                where = np.argwhere(mask == 2)
+                self.bg_per_img = 0
+                bg_fg = 1
 
-                center = np.random.uniform(high=where.shape[0])
-                y, x = where[int(center)]
-                image = image[y - self.random_crop_with_background: y + self.random_crop_with_background,
-                              x - self.random_crop_with_background: x + self.random_crop_with_background]
+            print(self.maps_paths[int(idx / self.crop / (self.bg_per_img + self.fg_per_img))], where)
+            center = np.random.uniform(high=where.shape[0])
+            y, x = where[int(center)]
+            image = image[y - self.random_crop_size: y + self.random_crop_size,
+                          x - self.random_crop_size: x + self.random_crop_size]
 
             image = self.transform(image, scaled)
 
-        sample = {'image': image, 'class': img_class, 'bg_or_fg': idx % 2}
+        sample = {
+            'image': image,
+            'class': img_class,
+            'bg_or_fg': bg_fg,
+        }
+
         return sample
 
     def crop_image(self, h, idx, image, w):
@@ -72,12 +87,8 @@ class FungusDataset(Dataset):
         return image
 
     def get_image_and_image_class(self, idx):
-        if self.random_crop_with_background:
-            img_class = self.fungus_paths[int(idx / self.crop / 2)].split('/')[-1][:2]
-            image = io.imread(self.fungus_paths[int(idx / self.crop / 2)])
-        else:
-            img_class = self.fungus_paths[int(idx // self.crop)].split('/')[-1][:2]
-            image = io.imread(self.fungus_paths[int(idx // self.crop)])
+        img_class = self.fungus_paths[int(idx / self.crop / (self.bg_per_img + self.fg_per_img))].split('/')[-1][:2]
+        image = io.imread(self.fungus_paths[int(idx / self.crop / (self.bg_per_img + self.fg_per_img))])
         return image, img_class
 
 
@@ -88,10 +99,10 @@ if __name__ == '__main__':
     paths = glob('../pngs/*/*1*')
     maps_paths = glob('../masks/*/*1*')
     # data = FungusDataset(paths, scale=8)
-    data = FungusDataset(paths, maps_paths=maps_paths, random_crop_with_background=125)
+    data = FungusDataset(paths, maps_paths=maps_paths, random_crop_size=125, number_of_bg_slices_per_image=2)
     # data = FungusDataset(paths)
     # data = FungusDataset(paths, crop=8)
-    dl = DataLoader(data, batch_size=2, shuffle=True, num_workers=2)
+    dl = DataLoader(data, batch_size=10, shuffle=True, num_workers=2)
 
     for i_batch, sample_batched in enumerate(dl):
         print(i_batch, sample_batched['image'].size(),
@@ -100,8 +111,8 @@ if __name__ == '__main__':
         # observe 2nd batch and stop.
         if i_batch == 1:
             plt.figure()
-            plt.imshow(sample_batched['image'][0].numpy().transpose((1, 2, 0)))
-            plt.title(sample_batched['class'][0])
+            plt.imshow(sample_batched['image'][8].numpy().transpose((1, 2, 0)))
+            plt.title(sample_batched['class'][8] + "_" + repr(sample_batched['bg_or_fg'][8].numpy()))
             plt.axis('off')
             plt.ioff()
             plt.show()
