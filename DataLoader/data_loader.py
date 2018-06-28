@@ -30,6 +30,30 @@ class FungusDataset(Dataset):
         self.bg_per_img = number_of_bg_slices_per_image
         self.fg_per_img = number_of_fg_slices_per_image
 
+        self.fungus_to_number_dict = {
+            "CA": 0,
+            "CG": 1,
+            "CL": 2,
+            "CN": 3,
+            "CP": 4,
+            "CT": 5,
+            "MF": 6,
+            "SB": 7,
+            "SC": 8,
+        }
+
+        self.number_to_fungus_dict = {
+            0: "CA",
+            1: "CG",
+            2: "CL",
+            3: "CN",
+            4: "CP",
+            5: "CT",
+            6: "MF",
+            7: "SB",
+            8: "SC",
+        }
+
     def __len__(self):
         return len(self.fungus_paths) * self.crop * (self.fg_per_img + self.bg_per_img)
 
@@ -70,7 +94,7 @@ class FungusDataset(Dataset):
 
         sample = {
             'image': image,
-            'class': img_class,
+            'class': self.fungus_to_number_dict[img_class],
             'bg_or_fg': bg_fg,
         }
 
@@ -112,7 +136,7 @@ if __name__ == '__main__':
         if i_batch == 1:
             plt.figure()
             plt.imshow(sample_batched['image'][8].numpy().transpose((1, 2, 0)))
-            plt.title(sample_batched['class'][8] + "_" + repr(sample_batched['bg_or_fg'][8].numpy()))
+            plt.title(str(sample_batched['class'][8]) + "_" + repr(sample_batched['bg_or_fg'][8].numpy()))
             plt.axis('off')
             plt.ioff()
             plt.show()
