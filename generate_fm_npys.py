@@ -11,10 +11,13 @@ import yaml
 from config import config
 from cyvlfeat.fisher import fisher
 from cyvlfeat.gmm import gmm
+from DataLoader import FungusDataset
 from skimage import io
 from sklearn.svm import SVC
 from torch import nn
+from torch.utils.data import DataLoader
 from torchvision import models
+from tqdm import tqdm
 
 
 def get_cuda_if_available():
@@ -24,58 +27,29 @@ def get_cuda_if_available():
     return torch.device('cpu')
 
 
-def read_image(path):
-    image = io.imread(path).astype(np.float32)
-    # TODO alexnet does not accept grayscale
-    if len(image.shape) == 2:
-        image = np.expand_dims(image, axis=0)
-    else:
-        # Move channels to the first dimension
-        image = np.moveaxis(image, -1, 0)
-    # Normalize to [0, 1]
-    image /= 256
-    tensor = torch.from_numpy(image)
-    return tensor
-
-
-def split_data_paths(config):
-    log.info('Splitting data paths...')
-    paths = glob(config['data_path'] + '/*/*')
-    train_paths = []
-    test_paths = []
-    for path in paths:
-        if int(path.split('/')[-1][2:-4]) > 9:
-            test_paths.append(path)
-        else:
-            train_paths.append(path)
-    log.info('Found {} files for training.'.format(len(train_paths)))
-    log.info('Found {} files for testing.'.format(len(test_paths)))
-    return (train_paths, test_paths)
-
-
 def get_feature_extractor():
-    log.info('Getting feature extractor...')
     model = models.alexnet(pretrained=True)
     extractor = model.features.eval()
     return extractor
 
 
 def extract_features(images, extractor):
-    log.info('Extracting features...')
-    res = []
-    for image in images:
-        features = extractor(image.unsqueeze(dim=0))
-        _, C, W, H = features.size()
-        res.append(features.reshape(-1, C, W * H).transpose_(1, 2))
-    res = torch.cat(res, dim=0)
-    log.debug('train_features {}'.format(res.size()))
-    return res
+    features = extractor(images)
+    N, C, W, H = features.size()
+    features = features.reshape(N, C, W * H).transpose_(2, 1)
+    log.debug('images {} features before {} after {}'.format(
+        images.size(), (N, C, W, H), features.size()))
+    return features
 
 
 def fit_gmm(X):
     log.info('Fitting gmm...')
+    X = X.reshape(-1, X.shape[2])
+    print(X.shape)
+    X = X[np.random.choice(
+        X.shape[0], config['gmm_train_samples'], replace=False), :]
     means, covars, priors, ll, posteriors = gmm(
-        X.reshape(-1, X.size()[2]), n_clusters=2, init_mode='rand')
+        X, n_clusters=config['n_clusters'], init_mode='kmeans')
     means = means.transpose()
     covars = covars.transpose()
     log.debug('{} {} {} {}'.format(
@@ -83,17 +57,11 @@ def fit_gmm(X):
     return (means, covars, priors)
 
 
-def compute_fisher_vectors(images_features, gmm):
-    log.info('Computing Fisher vectors...')
+def compute_fisher_vector(image_features, gmm):
     means, covars, priors = gmm
-    res = []
-    for features in images_features:
-        features = features.cpu().numpy().transpose()
-        fv = fisher(features, means, covars, priors)
-        res.append(fv)
-    res = np.stack(res)
-    log.debug(res.shape)
-    return res
+    image_features = image_features.transpose()
+    fv = fisher(image_features, means, covars, priors, improved=True)
+    return fv
 
 
 def train_classifier(X, y):
@@ -103,19 +71,47 @@ def train_classifier(X, y):
     return clf
 
 
+def get_train_loader():
+    paths = glob(config['data_path'] + '/images/*/*')
+    maps_paths = glob(config['data_path'] + '/masks/*/*')
+    dataset = FungusDataset(
+        paths=paths,
+        maps_paths=maps_paths,
+        random_crop_size=125,
+        number_of_bg_slices_per_image=2)
+    loader = DataLoader(dataset, batch_size=10, shuffle=True,
+                        num_workers=2, pin_memory=True)
+    return loader
+
+
+def compute_images_features(loader, extractor, device):
+    with torch.no_grad():
+        images_features = torch.tensor([], dtype=torch.float, device=device)
+        labels = torch.tensor([], dtype=torch.long)
+        for i, sample in enumerate(tqdm(loader)):
+            X = sample['image'].to(device)
+            y_true = sample['class']
+            X_features = extract_features(X, extractor)
+            images_features = torch.cat((images_features, X_features), dim=0)
+            labels = torch.cat((labels, y_true), dim=0)
+            # if i == 2:
+            #    break
+    return images_features.cpu().numpy(), labels.numpy()
+
+
 if __name__ == '__main__':
     log.basicConfig(stream=sys.stdout, level=config['logging_level'])
     device = get_cuda_if_available()
-    train_paths, test_paths = split_data_paths(config)
+    train_loader = get_train_loader()
     extractor = get_feature_extractor().to(device)
-    with torch.no_grad():
-        train_labels = [path.split('/')[-2] for path in train_paths]
-        images = [read_image(path).to(device) for path in train_paths]
-        train_features = extract_features(images, extractor)
-        gmm = fit_gmm(train_features)
-        fisher_vectors = compute_fisher_vectors(train_features, gmm)
+    train_images_features, train_labels = compute_images_features(
+        train_loader, extractor, device)
+    gmm = fit_gmm(train_images_features)
+    fisher_vectors = []
+    for image_features in train_images_features:
+        fisher_vectors.append(compute_fisher_vector(image_features, gmm))
+    fisher_vectors = np.array(fisher_vectors)
     classifier = train_classifier(fisher_vectors, train_labels)
-    print('Calculating training accuracy...')
     y_pred = classifier.predict(fisher_vectors)
-    print(train_labels)
-    print(y_pred)
+    acc = np.sum(np.equal(train_labels, y_pred)) / len(train_labels)
+    log.info('Training accuracy {}'.format(acc))
