@@ -40,6 +40,7 @@ class FungusDataset(Dataset):
             "MF": 6,
             "SB": 7,
             "SC": 8,
+            "BG": 9,
         }
 
         self.number_to_fungus_dict = {
@@ -52,6 +53,7 @@ class FungusDataset(Dataset):
             6: "MF",
             7: "SB",
             8: "SC",
+            9: "BG",
         }
 
     def __len__(self):
@@ -74,15 +76,13 @@ class FungusDataset(Dataset):
             mask = io.imread(self.maps_paths[int(idx / self.crop / (self.bg_per_img + self.fg_per_img))])
             if (idx % (self.bg_per_img + self.fg_per_img)) > self.bg_per_img:
                 where = np.argwhere(mask == 2)
-                bg_fg = 1
             elif 1 in mask:
                 where = np.argwhere(mask == 1)
-                bg_fg = 0
+                img_class = "BG"
             else:
-                raise Warning("No background on image. Only fg will be returned")
+                Warning("No background on image. Only fg will be returned")
                 where = np.argwhere(mask == 2)
                 self.bg_per_img = 0
-                bg_fg = 1
 
             print(self.maps_paths[int(idx / self.crop / (self.bg_per_img + self.fg_per_img))], where)
             center = np.random.uniform(high=where.shape[0])
@@ -95,7 +95,6 @@ class FungusDataset(Dataset):
         sample = {
             'image': image,
             'class': self.fungus_to_number_dict[img_class],
-            'bg_or_fg': bg_fg,
         }
 
         return sample
@@ -126,7 +125,7 @@ if __name__ == '__main__':
     data = FungusDataset(paths, maps_paths=maps_paths, random_crop_size=125, number_of_bg_slices_per_image=2)
     # data = FungusDataset(paths)
     # data = FungusDataset(paths, crop=8)
-    dl = DataLoader(data, batch_size=10, shuffle=True, num_workers=2)
+    dl = DataLoader(data, batch_size=32, shuffle=True, num_workers=2)
 
     for i_batch, sample_batched in enumerate(dl):
         print(i_batch, sample_batched['image'].size(),
