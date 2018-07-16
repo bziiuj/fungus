@@ -72,14 +72,12 @@ def train_classifier(X, y):
 
 
 def get_train_loader():
-    paths = glob(config['data_path'] + '/images/*/*')
-    maps_paths = glob(config['data_path'] + '/masks/*/*')
     dataset = FungusDataset(
-        paths=paths,
-        maps_paths=maps_paths,
+        dir_with_pngs_and_masks=config['data_path'],
         random_crop_size=125,
-        number_of_bg_slices_per_image=2)
-    loader = DataLoader(dataset, batch_size=10, shuffle=True,
+        number_of_bg_slices_per_image=2,
+        train=True)
+    loader = DataLoader(dataset, batch_size=32, shuffle=True,
                         num_workers=2, pin_memory=True)
     return loader
 

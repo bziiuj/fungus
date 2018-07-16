@@ -1,15 +1,11 @@
 import os
+
 import numpy as np
-
+from DataLoader.img_files import (test_fungus_paths, test_maps_paths,
+                                  train_fungus_paths, train_maps_paths)
+from DataLoader.normalization import normalize_image
 from skimage import io
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
-
-from normalization import normalize_image
-from img_files import test_fungus_paths
-from img_files import test_maps_paths
-from img_files import train_fungus_paths
-from img_files import train_maps_paths
+from torch.utils.data import DataLoader, Dataset
 
 
 class FungusDataset(Dataset):
@@ -43,29 +39,29 @@ class FungusDataset(Dataset):
         np.random.seed(seed)
 
         self.fungus_to_number_dict = {
-            "CA": 0,
-            "CG": 1,
-            "CL": 2,
-            "CN": 3,
-            "CP": 4,
-            "CT": 5,
-            "MF": 6,
-            "SB": 7,
-            "SC": 8,
-            "BG": 9,
+            'CA': 0,
+            'CG': 1,
+            'CL': 2,
+            'CN': 3,
+            'CP': 4,
+            'CT': 5,
+            'MF': 6,
+            'SB': 7,
+            'SC': 8,
+            'BG': 9,
         }
 
         self.number_to_fungus_dict = {
-            0: "CA",
-            1: "CG",
-            2: "CL",
-            3: "CN",
-            4: "CP",
-            5: "CT",
-            6: "MF",
-            7: "SB",
-            8: "SC",
-            9: "BG",
+            0: 'CA',
+            1: 'CG',
+            2: 'CL',
+            3: 'CN',
+            4: 'CP',
+            5: 'CT',
+            6: 'MF',
+            7: 'SB',
+            8: 'SC',
+            9: 'BG',
         }
 
     def __len__(self):
@@ -84,7 +80,8 @@ class FungusDataset(Dataset):
             if self.scale:
                 scaled = (int(h // self.scale), int(w // self.scale))
 
-            mask_path = self.maps_paths[int(idx / self.crop / (self.bg_per_img + self.fg_per_img))]
+            mask_path = self.maps_paths[int(
+                idx / self.crop / (self.bg_per_img + self.fg_per_img))]
             if self.dir is not None:
                 mask_path = os.path.join(self.dir, mask_path)
             mask = io.imread(mask_path)
@@ -92,9 +89,9 @@ class FungusDataset(Dataset):
                 where = np.argwhere(mask == 2)
             elif 1 in mask:
                 where = np.argwhere(mask == 1)
-                img_class = "BG"
+                img_class = 'BG'
             else:
-                Warning("No background on image. Only fg will be returned")
+                Warning('No background on image. Only fg will be returned')
                 where = np.argwhere(mask == 2)
 
             center = np.random.uniform(high=where.shape[0])
@@ -122,8 +119,10 @@ class FungusDataset(Dataset):
         return image
 
     def get_image_and_image_class(self, idx):
-        img_class = self.fungus_paths[int(idx / self.crop / (self.bg_per_img + self.fg_per_img))].split('/')[-1][:2]
-        path = self.fungus_paths[int(idx / self.crop / (self.bg_per_img + self.fg_per_img))]
+        img_class = self.fungus_paths[int(
+            idx / self.crop / (self.bg_per_img + self.fg_per_img))].split('/')[-1][:2]
+        path = self.fungus_paths[int(
+            idx / self.crop / (self.bg_per_img + self.fg_per_img))]
         if self.dir is not None:
             path = os.path.join(self.dir, path)
         image = io.imread(path)
