@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Read feature matrix and labels from .npy files and classify them. In train mode use train dataset, fit GMM and then fit SVC on it, in test mode load best model obtained from `hyperparameters.py` and perform prediction on test dataset.
+Read feature matrix and labels from .npy files and classify them. In train mode use train dataset, fit GMM and then fit SVC, in test mode load best model obtained from `hyperparameters.py` and perform prediction on test dataset.
 """
 import argparse
 import logging as log
@@ -10,38 +10,47 @@ from config import config
 from cyvlfeat.fisher import fisher
 from cyvlfeat.gmm import gmm
 from sklearn import svm
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.externals import joblib
+from sklearn.pipeline import Pipeline
 
 
-def fit_gmm(X):
-    X = X.reshape(-1, X.shape[2])
-    X = X[np.random.choice(
-        X.shape[0], config['gmm_train_samples'], replace=False), :]
-    means, covars, priors, ll, posteriors = gmm(
-        X, n_clusters=config['n_clusters'], init_mode='kmeans')
-    means = means.transpose()
-    covars = covars.transpose()
-    log.debug('{} {} {} {}'.format(
-        means.shape, covars.shape, priors.shape, posteriors.shape))
-    return (means, covars, priors)
+class FisherVectorTransformer(BaseEstimator, TransformerMixin):
+    """Fit GMM and compute Fisher vectors"""
+
+    def __init__(self, gmm_clusters_number=10, gmm_samples_number=1000, init_mode='kmeans'):
+        self.gmm_clusters_number = gmm_clusters_number
+        self.gmm_samples_number = gmm_samples_number
+        self.init_mode = init_mode
+
+    def fit(self, X, y=None):
+        X = X.reshape(-1, X.shape[2])
+        if len(X) < self.gmm_samples_number:
+            raise AttributeError(
+                'Number of samples must be greater than number of GMM samples')
+        X = X[np.random.choice(
+            X.shape[0], self.gmm_samples_number, replace=False), :]
+        means, covars, priors, ll, posteriors = gmm(
+            X, n_clusters=self.gmm_clusters_number, init_mode=self.init_mode)
+        means = means.transpose()
+        covars = covars.transpose()
+        self.gmm_ = (means, covars, priors)
+        return self
+
+    def transform(self, X, y=None):
+        return np.array(list(map(lambda x: self.__fisher_vector(x), X)))
+
+    def __fisher_vector(self, x):
+        """Compute Fisher vector from feature vector x."""
+        means, covars, priors = self.gmm_
+        x = x.transpose()
+        return fisher(x, means, covars, priors, improved=True)
 
 
-def fisher_vector(features, gmm):
-    """Compute Fisher vector from feature vector."""
-    means, covars, priors = gmm
-    features = features.transpose()
-    return fisher(features, means, covars, priors, improved=True)
-
-
-def compute_fisher_vectors(feature_matrix):
-    """Fit GMM and then use it to compute Fisher vector for each image.
-
-    feature_matrix -
-    """
-    gmm = fit_gmm(feature_matrix)
-    fisher_vectors = np.array(
-        list(map(lambda x: fisher_vector(x, gmm), feature_matrix)))
-    return fisher_vectors
+pipeline = Pipeline(
+    steps=[
+        ('fisher_vector', FisherVectorTransformer()),
+        ('svc', svm.SVC())])
 
 
 if __name__ == '__main__':
@@ -57,10 +66,8 @@ if __name__ == '__main__':
     labels_filename = filename_prefix + 'labels.npy'
     feature_matrix = np.load(feature_matrix_filename)
     labels = np.load(labels_filename)
-    fisher_vectors = compute_fisher_vectors(feature_matrix)
     if args.test:
-        clf = joblib.load('best_model.pkl')
+        pipeline = joblib.load('best_model.pkl')
     else:
-        clf = svm.SVC()
-        clf.fit(fisher_vectors, labels)
-    log.info('Accuracy {}'.format(clf.score(fisher_vectors, labels)))
+        pipeline.fit(feature_matrix, labels)
+    log.info('Accuracy {}'.format(pipeline.score(feature_matrix, labels)))
