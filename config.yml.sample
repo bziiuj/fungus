@@ -2,7 +2,3 @@
 data_path: ''
 # Logging level, as in logging package, uppercase
 logging_level: ''
-# Number of clusters for gmm
-n_clusters: 10
-# Number of samples used to train gmm
-gmm_train_samples: 2000
