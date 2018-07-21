@@ -3,7 +3,8 @@ import logging as log
 import numpy as np
 from cyvlfeat.fisher import fisher
 from cyvlfeat.gmm import gmm
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import BaseEstimator
+from sklearn.base import TransformerMixin
 
 
 class FisherVectorTransformer(BaseEstimator, TransformerMixin):
@@ -19,10 +20,14 @@ class FisherVectorTransformer(BaseEstimator, TransformerMixin):
         if len(X) < self.gmm_samples_number:
             raise AttributeError(
                 'Number of samples must be greater than number of GMM samples')
-        X = X[np.random.choice(
-            X.shape[0], self.gmm_samples_number, replace=False), :]
+        indices = np.random.choice(
+            X.shape[0], self.gmm_samples_number, replace=False)
+        X = X[indices, :]
         means, covars, priors, ll, posteriors = gmm(
-            X, n_clusters=self.gmm_clusters_number, init_mode=self.init_mode)
+            X,
+            n_clusters=self.gmm_clusters_number,
+            init_mode=self.init_mode,
+        )
         means = means.transpose()
         covars = covars.transpose()
         self.gmm_ = (means, covars, priors)

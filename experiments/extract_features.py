@@ -12,10 +12,12 @@ sys.path.insert(0, os.path.abspath(os.path.join(
 import argparse
 
 import numpy as np
-from config import config
-from DataLoader import FungusDataset
-from pipeline import features
 from torch.utils import data
+
+from config import config  # isort:skip
+from DataLoader import FungusDataset  # isort:skip
+from pipeline import features  # isort:skip
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)

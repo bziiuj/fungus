@@ -14,17 +14,20 @@ import argparse
 import logging as log
 
 import numpy as np
-from config import config
-from pipeline.classification import FisherVectorTransformer
 from sklearn import svm
 from sklearn.externals import joblib
 from sklearn.pipeline import Pipeline
+
+from config import config  # isort:skip
+from pipeline.classification import FisherVectorTransformer  # isort:skip
 
 if __name__ == '__main__':
     pipeline = Pipeline(
         steps=[
             ('fisher_vector', FisherVectorTransformer()),
-            ('svc', svm.SVC())])
+            ('svc', svm.SVC())
+        ]
+    )
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--test', default=False,

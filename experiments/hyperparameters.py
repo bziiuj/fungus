@@ -10,21 +10,24 @@ sys.path.insert(0, os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..')))  # isort:skip
 
 import logging as log
-import tempfile
 
 import numpy as np
 import torch
-from config import config
-from pipeline.classification import FisherVectorTransformer
-from sklearn import model_selection, svm
+from sklearn import model_selection
+from sklearn import svm
 from sklearn.externals import joblib
 from sklearn.pipeline import Pipeline
+
+from config import config  # isort:skip
+from pipeline.classification import FisherVectorTransformer  # isort:skip
 
 if __name__ == '__main__':
     pipeline = Pipeline(
         steps=[
             ('fisher_vector', FisherVectorTransformer()),
-            ('svc', svm.SVC())])
+            ('svc', svm.SVC())
+        ]
+    )
 
     feature_matrix = np.load('train_feature_matrix.npy')
     labels = np.load('train_labels.npy')
