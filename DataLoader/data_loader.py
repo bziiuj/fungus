@@ -1,14 +1,42 @@
 import os
 
 import numpy as np
-from DataLoader.img_files import (test_fungus_paths, test_maps_paths,
-                                  train_fungus_paths, train_maps_paths)
+from DataLoader.img_files import test_fungus_paths
+from DataLoader.img_files import test_maps_paths
+from DataLoader.img_files import train_fungus_paths
+from DataLoader.img_files import train_maps_paths
 from DataLoader.normalization import normalize_image
 from skimage import io
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
+from torch.utils.data import Dataset
 
 
 class FungusDataset(Dataset):
+    FUNGUS_TO_NUMBER = {
+        'CA': 0,
+        'CG': 1,
+        'CL': 2,
+        'CN': 3,
+        'CP': 4,
+        'CT': 5,
+        'MF': 6,
+        'SB': 7,
+        'SC': 8,
+        'BG': 9,
+    }
+    NUMBER_TO_FUNGUS = {
+        0: 'CA',
+        1: 'CG',
+        2: 'CL',
+        3: 'CN',
+        4: 'CP',
+        5: 'CT',
+        6: 'MF',
+        7: 'SB',
+        8: 'SC',
+        9: 'BG',
+    }
+
     def __init__(
             self,
             transform=normalize_image,
@@ -37,32 +65,6 @@ class FungusDataset(Dataset):
             self.fungus_paths = test_fungus_paths
             self.maps_paths = test_maps_paths
         np.random.seed(seed)
-
-        self.fungus_to_number_dict = {
-            'CA': 0,
-            'CG': 1,
-            'CL': 2,
-            'CN': 3,
-            'CP': 4,
-            'CT': 5,
-            'MF': 6,
-            'SB': 7,
-            'SC': 8,
-            'BG': 9,
-        }
-
-        self.number_to_fungus_dict = {
-            0: 'CA',
-            1: 'CG',
-            2: 'CL',
-            3: 'CN',
-            4: 'CP',
-            5: 'CT',
-            6: 'MF',
-            7: 'SB',
-            8: 'SC',
-            9: 'BG',
-        }
 
     def __len__(self):
         return len(self.fungus_paths) * self.crop * (self.fg_per_img + self.bg_per_img)
@@ -103,7 +105,7 @@ class FungusDataset(Dataset):
 
         sample = {
             'image': image,
-            'class': self.fungus_to_number_dict[img_class],
+            'class': self.FUNGUS_TO_NUMBER[img_class],
         }
 
         return sample
