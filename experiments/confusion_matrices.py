@@ -15,14 +15,14 @@ from sklearn.externals import joblib
 from sklearn.metrics import confusion_matrix
 from sklearn.pipeline import Pipeline
 
-matplotlib.use('agg')  # isort:skip
+plt.switch_backend('agg')
 
 
-def plot_cnf_matrix(matrix, classes, normalize=False):
+def plot_cnf_matrix(matrix, classes, title, normalize=False):
     if normalize:
         matrix = matrix.astype('float') / matrix.sum(axis=1)[:, np.newaxis]
     plt.imshow(matrix, interpolation='nearest', cmap=plt.cm.Blues)
-    plt.title('Confusion matrix')
+    plt.title(title)
     # legend
     plt.colorbar()
     tick_marks = np.arange(len(classes.keys()))
@@ -48,16 +48,32 @@ if __name__ == '__main__':
             ('svc', svm.SVC())
         ]
     )
-    pipeline = joblib.load('best_model.pkl')
+    pipeline = joblib.load('results/best_model.pkl')
 
-    feature_matrix = np.load('test_feature_matrix.npy')
-    y_true = np.load('test_labels.npy')
+    # train
+    feature_matrix = np.load('results/train_feature_matrix.npy')
+    y_true = np.load('results/train_labels.npy')
     y_pred = pipeline.predict(feature_matrix)
-    print(pipeline.score(feature_matrix, y_true))
     cnf_matrix = confusion_matrix(y_true, y_pred)
     plt.figure()
-    plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS)
-    plt.savefig('cnf_matrix.jpg')
+    plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
+                    'Train cnf matrix')
+    plt.savefig('results/train_cnf_matrix.jpg')
     plt.figure()
-    plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS, normalize=True)
-    plt.savefig('cnf_matrix_normalized.jpg')
+    plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
+                    'Train normalized cnf matrix', normalize=True)
+    plt.savefig('results/train_cnf_matrix_normalized.jpg')
+
+    # test
+    feature_matrix = np.load('results/test_feature_matrix.npy')
+    y_true = np.load('results/test_labels.npy')
+    y_pred = pipeline.predict(feature_matrix)
+    cnf_matrix = confusion_matrix(y_true, y_pred)
+    plt.figure()
+    plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
+                    'Test cnf matrix')
+    plt.savefig('results/test_cnf_matrix.jpg')
+    plt.figure()
+    plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
+                    'Test normalized cnf matrix', normalize=True)
+    plt.savefig('results/test_cnf_matrix_normalized.jpg')
