@@ -29,16 +29,16 @@ if __name__ == '__main__':
         ]
     )
 
-    feature_matrix = np.load('train_feature_matrix.npy')
-    labels = np.load('train_labels.npy')
+    feature_matrix = np.load('results/train_feature_matrix.npy')
+    labels = np.load('results/train_labels.npy')
     param_grid = [
         {
-            'fisher_vector__gmm_samples_number': [1000, 10000],
+            'fisher_vector__gmm_samples_number': [5000, 10000],
             'svc__C': [1, 10, 100, 1000],
             'svc__kernel': ['linear']
         },
         {
-            'fisher_vector__gmm_samples_number': [1000, 10000],
+            'fisher_vector__gmm_samples_number': [5000, 10000],
             'svc__C': [1, 10, 100, 1000],
             'svc__gamma': [0.001, 0.0001],
             'svc__kernel': ['rbf']
@@ -46,4 +46,4 @@ if __name__ == '__main__':
     pipeline = model_selection.GridSearchCV(pipeline, param_grid)
     pipeline.fit(feature_matrix, labels)
     log.info(pipeline.best_params_)
-    joblib.dump(pipeline, 'best_model.pkl')
+    joblib.dump(pipeline, 'results/best_model.pkl')
