@@ -42,17 +42,26 @@ def plot_cnf_matrix(matrix, classes, title, normalize=False):
     plt.xlabel('Predicted')
 
 
-def probability_confusion_matrix(y_true, y_pred, probabilities):
-    matrix = np.zeros((10, 10))
-    count_matrix = np.zeros((10, 10))
+def probability_confusion_matrix(y_true, y_pred, probabilities, classes):
+    n_classes = len(classes.keys())
+    dim = (n_classes, n_classes)
+    matrix = np.zeros(dim)
+    count_matrix = np.zeros(dim)
     for i in range(len(y_true)):
         matrix[y_true[i], y_pred[i]] += probabilities[i, y_pred[i]]
         count_matrix[y_true[i], y_pred[i]] += 1
-    print(matrix)
-    print(count_matrix)
     tmp = np.divide(matrix, count_matrix)
-    print(tmp)
     return tmp
+
+
+def plot_accuracy_bars(cnf_matrix, classes, title):
+    print(np.diag(cnf_matrix))
+    print(np.sum(cnf_matrix, axis=1))
+    accuracy = np.diag(cnf_matrix) / np.sum(cnf_matrix, axis=1)
+    plt.title(title)
+    plt.bar(classes.values(), accuracy)
+    plt.ylabel('Accuracy')
+    plt.xlabel('Classes')
 
 
 if __name__ == '__main__':
@@ -74,12 +83,17 @@ if __name__ == '__main__':
                     'Train cnf matrix')
     plt.savefig('results/train_cnf_matrix.jpg')
     plt.figure()
+    plot_accuracy_bars(
+        cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS, 'Train accuracy')
+    plt.savefig('results/train_accuracy_bars.jpg')
+    plt.figure()
     plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
                     'Train normalized cnf matrix', normalize=True)
     plt.savefig('results/train_cnf_matrix_normalized.jpg')
     plt.figure()
     probabilities = pipeline.predict_proba(feature_matrix)
-    cnf_matrix = probability_confusion_matrix(y_true, y_pred, probabilities)
+    cnf_matrix = probability_confusion_matrix(
+        y_true, y_pred, probabilities, FungusDataset.NUMBER_TO_FUNGUS)
     plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
                     'Train probability cnf matrix')
     plt.savefig('results/train_probability_cnf_matrix.jpg')
@@ -94,12 +108,17 @@ if __name__ == '__main__':
                     'Test cnf matrix')
     plt.savefig('results/test_cnf_matrix.jpg')
     plt.figure()
+    plot_accuracy_bars(
+        cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS, 'Test accuracy')
+    plt.savefig('results/test_accuracy_bars.jpg')
+    plt.figure()
     plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
                     'Test normalized cnf matrix', normalize=True)
     plt.savefig('results/test_cnf_matrix_normalized.jpg')
     plt.figure()
     probabilities = pipeline.predict_proba(feature_matrix)
-    cnf_matrix = probability_confusion_matrix(y_true, y_pred, probabilities)
+    cnf_matrix = probability_confusion_matrix(
+        y_true, y_pred, probabilities, FungusDataset.NUMBER_TO_FUNGUS)
     plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
                     'Test probability cnf matrix')
     plt.savefig('results/test_probability_cnf_matrix.jpg')
