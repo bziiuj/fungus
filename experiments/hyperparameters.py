@@ -25,7 +25,7 @@ if __name__ == '__main__':
     pipeline = Pipeline(
         steps=[
             ('fisher_vector', FisherVectorTransformer()),
-            ('svc', svm.SVC())
+            ('svc', svm.SVC(probability=True))
         ]
     )
 
@@ -43,7 +43,7 @@ if __name__ == '__main__':
             'svc__gamma': [0.001, 0.0001],
             'svc__kernel': ['rbf']
         }]
-    pipeline = model_selection.GridSearchCV(pipeline, param_grid)
+    pipeline = model_selection.GridSearchCV(pipeline, param_grid, n_jobs=24)
     pipeline.fit(feature_matrix, labels)
     log.info(pipeline.best_params_)
     joblib.dump(pipeline, 'results/best_model.pkl')
