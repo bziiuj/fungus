@@ -29,7 +29,8 @@ def plot_cnf_matrix(matrix, classes, title, normalize=False):
     plt.xticks(tick_marks, classes.values(), rotation=45)
     plt.yticks(tick_marks, classes.values())
     # numeric values on matrix
-    fmt = '.2f' if normalize else 'd'
+    # fmt = '.2f' if normalize else 'd'
+    fmt = '.2f'
     tresh = matrix.max() / 2
     for i, j in itertools.product(range(matrix.shape[0]), range(matrix.shape[1])):
         plt.text(j, i, format(matrix[i, j], fmt),
@@ -39,6 +40,19 @@ def plot_cnf_matrix(matrix, classes, title, normalize=False):
     plt.tight_layout()
     plt.ylabel('True')
     plt.xlabel('Predicted')
+
+
+def probability_confusion_matrix(y_true, y_pred, probabilities):
+    matrix = np.zeros((10, 10))
+    count_matrix = np.zeros((10, 10))
+    for i in range(len(y_true)):
+        matrix[y_true[i], y_pred[i]] += probabilities[i, y_pred[i]]
+        count_matrix[y_true[i], y_pred[i]] += 1
+    print(matrix)
+    print(count_matrix)
+    tmp = np.divide(matrix, count_matrix)
+    print(tmp)
+    return tmp
 
 
 if __name__ == '__main__':
@@ -63,6 +77,12 @@ if __name__ == '__main__':
     plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
                     'Train normalized cnf matrix', normalize=True)
     plt.savefig('results/train_cnf_matrix_normalized.jpg')
+    plt.figure()
+    probabilities = pipeline.predict_proba(feature_matrix)
+    cnf_matrix = probability_confusion_matrix(y_true, y_pred, probabilities)
+    plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
+                    'Train probability cnf matrix')
+    plt.savefig('results/train_probability_cnf_matrix.jpg')
 
     # test
     feature_matrix = np.load('results/test_feature_matrix.npy')
@@ -77,3 +97,9 @@ if __name__ == '__main__':
     plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
                     'Test normalized cnf matrix', normalize=True)
     plt.savefig('results/test_cnf_matrix_normalized.jpg')
+    plt.figure()
+    probabilities = pipeline.predict_proba(feature_matrix)
+    cnf_matrix = probability_confusion_matrix(y_true, y_pred, probabilities)
+    plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
+                    'Test probability cnf matrix')
+    plt.savefig('results/test_probability_cnf_matrix.jpg')
