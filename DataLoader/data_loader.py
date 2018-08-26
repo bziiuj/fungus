@@ -1,10 +1,9 @@
 import os
+import warnings
 
 import numpy as np
-from DataLoader.img_files import test_fungus_paths
-from DataLoader.img_files import test_maps_paths
-from DataLoader.img_files import train_fungus_paths
-from DataLoader.img_files import train_maps_paths
+from DataLoader.img_files import test_paths
+from DataLoader.img_files import train_paths
 from DataLoader.normalization import normalize_image
 from skimage import io
 from torch.utils.data import DataLoader
@@ -47,7 +46,8 @@ class FungusDataset(Dataset):
             number_of_fg_slices_per_image=8,
             seed=9001,
             train=True,
-            dir_with_pngs_and_masks=None
+            pngs_dir=None,
+            masks_dir=None
     ):
 
         self.transform = transform
@@ -57,17 +57,16 @@ class FungusDataset(Dataset):
         self.bg_per_img = number_of_bg_slices_per_image
         self.fg_per_img = number_of_fg_slices_per_image
         self.train = train
-        self.dir = dir_with_pngs_and_masks
+        self.pngs_dir = pngs_dir
+        self.masks_dir = masks_dir
         if self.train:
-            self.fungus_paths = train_fungus_paths
-            self.maps_paths = train_maps_paths
+            self.paths = train_paths
         else:
-            self.fungus_paths = test_fungus_paths
-            self.maps_paths = test_maps_paths
+            self.paths = test_paths
         np.random.seed(seed)
 
     def __len__(self):
-        return len(self.fungus_paths) * self.crop * (self.fg_per_img + self.bg_per_img)
+        return len(self.paths) * self.crop * (self.fg_per_img + self.bg_per_img)
 
     def __getitem__(self, idx):
         image, img_class = self.get_image_and_image_class(idx)
@@ -82,10 +81,10 @@ class FungusDataset(Dataset):
             if self.scale:
                 scaled = (int(h // self.scale), int(w // self.scale))
 
-            mask_path = self.maps_paths[int(
+            mask_path = self.paths[int(
                 idx / self.crop / (self.bg_per_img + self.fg_per_img))]
-            if self.dir is not None:
-                mask_path = os.path.join(self.dir, mask_path)
+            if self.masks_dir is not None:
+                mask_path = os.path.join(self.masks_dir, mask_path)
             mask = io.imread(mask_path)
             if (idx % (self.bg_per_img + self.fg_per_img)) > self.bg_per_img:
                 where = np.argwhere(mask == 2)
@@ -93,7 +92,8 @@ class FungusDataset(Dataset):
                 where = np.argwhere(mask == 1)
                 img_class = 'BG'
             else:
-                Warning('No background on image. Only fg will be returned')
+                warnings.warn(
+                    'No background on image of class {}. Only fg will be returned.'.format(img_class))
                 where = np.argwhere(mask == 2)
 
             center = np.random.uniform(high=where.shape[0])
@@ -121,12 +121,12 @@ class FungusDataset(Dataset):
         return image
 
     def get_image_and_image_class(self, idx):
-        img_class = self.fungus_paths[int(
+        img_class = self.paths[int(
             idx / self.crop / (self.bg_per_img + self.fg_per_img))].split('/')[-1][:2]
-        path = self.fungus_paths[int(
+        path = self.paths[int(
             idx / self.crop / (self.bg_per_img + self.fg_per_img))]
-        if self.dir is not None:
-            path = os.path.join(self.dir, path)
+        if self.pngs_dir is not None:
+            path = os.path.join(self.pngs_dir, path)
         image = io.imread(path)
         return image, img_class
 
@@ -135,8 +135,8 @@ if __name__ == '__main__':
     from matplotlib import pyplot as plt
     # data = FungusDataset(paths, scale=8)
     # data = FungusDataset(random_crop_size=125, number_of_bg_slices_per_image=2, dir_with_pngs_and_masks=None)
-    data = FungusDataset(random_crop_size=125, number_of_bg_slices_per_image=2,
-                         dir_with_pngs_and_masks='/home/dawid_rymarczyk/PycharmProjects/fungus', train=True)
+    # data = FungusDataset(random_crop_size=125, number_of_bg_slices_per_image=2,
+    #                      dir_with_pngs_and_masks='/home/dawid_rymarczyk/PycharmProjects/fungus', train=True)
     # data = FungusDataset(paths)
     # data = FungusDataset(paths, crop=8)
     dl = DataLoader(data, batch_size=32, shuffle=True, num_workers=2)

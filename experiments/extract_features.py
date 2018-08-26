@@ -24,12 +24,18 @@ from pipeline import features  # isort:skip
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        'pngs_dir', help='absolute path to directory with pngs')
+    parser.add_argument(
+        'masks_dir', help='absolute path to directory with masks')
     parser.add_argument('--test', default=False,
                         action='store_true', help='enable test mode')
+    parser.add_argument('--prefix', default='', help='result filenames prefix')
     args = parser.parse_args()
     device = features.get_cuda()
     dataset = FungusDataset(
-        dir_with_pngs_and_masks=config['data_path'],
+        pngs_dir=args.pngs_dir,
+        masks_dir=args.masks_dir,
         random_crop_size=125,
         number_of_bg_slices_per_image=2,
         number_of_fg_slices_per_image=16,
@@ -45,6 +51,8 @@ if __name__ == '__main__':
         filename_prefix = 'results/test_'
     else:
         filename_prefix = 'results/train_'
+    if args.prefix:
+        filename_prefix += args.prefix + '_'
     feature_matrix_filename = filename_prefix + 'feature_matrix.npy'
     labels_filename = filename_prefix + 'labels.npy'
     np.save(feature_matrix_filename, feature_matrix)
