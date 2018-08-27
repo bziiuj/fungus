@@ -31,13 +31,14 @@ if __name__ == '__main__':
     parser.add_argument('--test', default=False,
                         action='store_true', help='enable test mode')
     parser.add_argument('--prefix', default='', help='result filenames prefix')
+    parser.add_argument('--size', default=125, type=int, help='random crop radius')
     args = parser.parse_args()
     device = features.get_cuda()
     dataset = FungusDataset(
         pngs_dir=args.pngs_dir,
         masks_dir=args.masks_dir,
-        random_crop_size=125,
-        number_of_bg_slices_per_image=2,
+        random_crop_size=args.size,
+        number_of_bg_slices_per_image=1,
         number_of_fg_slices_per_image=16,
         train=not args.test)
     loader = data.DataLoader(

@@ -9,6 +9,7 @@ import sys  # isort:skip
 sys.path.insert(0, os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..')))  # isort:skip
 
+import argparse
 import logging as log
 
 import numpy as np
@@ -22,15 +23,23 @@ from config import config  # isort:skip
 from pipeline.classification import FisherVectorTransformer  # isort:skip
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--prefix', default='', help='input file prefix')
+    args = parser.parse_args()
+    
     pipeline = Pipeline(
         steps=[
             ('fisher_vector', FisherVectorTransformer()),
             ('svc', svm.SVC(probability=True))
         ]
     )
+    
+    filename_prefix = 'results/train_'
+    if args.prefix:
+        filename_prefix += args.prefix + '_'
 
-    feature_matrix = np.load('results/train_feature_matrix.npy')
-    labels = np.load('results/train_labels.npy')
+    feature_matrix = np.load(filename_prefix + 'feature_matrix.npy')
+    labels = np.load(filename_prefix + 'labels.npy')
     param_grid = [
         {
             'fisher_vector__gmm_samples_number': [5000, 10000],
@@ -46,4 +55,9 @@ if __name__ == '__main__':
     pipeline = model_selection.GridSearchCV(pipeline, param_grid, n_jobs=24)
     pipeline.fit(feature_matrix, labels)
     log.info(pipeline.best_params_)
-    joblib.dump(pipeline, 'results/best_model.pkl')
+    model_filename = 'results/'
+    if args.prefix:
+        model_filename += args.prefix + '_'
+    model_filename += 'best_model.pkl'
+    joblib.dump(pipeline, model_filename)
+
