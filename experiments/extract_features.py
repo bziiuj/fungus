@@ -32,7 +32,7 @@ if __name__ == '__main__':
                         action='store_true', help='enable test mode')
     parser.add_argument('--prefix', default='', help='result filenames prefix')
     parser.add_argument('--size', default=125, type=int, help='random crop radius')
-    parser.add_argument('--scale', default=None, type=int, help='scale factor')
+    parser.add_argument('--scale', default=None, type=float, help='scale factor')
     args = parser.parse_args()
     device = features.get_cuda()
     dataset = FungusDataset(
