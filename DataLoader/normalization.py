@@ -5,8 +5,6 @@ import numpy as np
 
 def normalize_image(img):
     transform = transforms.Compose([
-        transforms.ToPILImage(),
-        transforms.Grayscale(num_output_channels=3),
         transforms.ToTensor(),
         transforms.Normalize(
             [0.67049974, 0.67049974, 0.67049974],

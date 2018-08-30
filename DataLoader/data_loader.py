@@ -95,7 +95,7 @@ class FungusDataset(Dataset):
             y, x = where[int(center)]
             image = image[y - self.random_crop_size: y + self.random_crop_size,
                           x - self.random_crop_size: x + self.random_crop_size]
-            image = np.expand_dims(image, axis=2)
+            image = np.stack((image, image, image), axis=2)
             image = self.transform(image)
 
         sample = {
