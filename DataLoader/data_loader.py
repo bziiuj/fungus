@@ -5,7 +5,7 @@ import numpy as np
 from DataLoader.img_files import test_paths
 from DataLoader.img_files import train_paths
 from DataLoader.normalization import normalize_image
-from skimage import io
+from skimage import io, transform
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
@@ -39,7 +39,6 @@ class FungusDataset(Dataset):
     def __init__(
             self,
             transform=normalize_image,
-            scale=None,
             crop=1,
             random_crop_size=125,
             number_of_bg_slices_per_image=0,
@@ -51,7 +50,6 @@ class FungusDataset(Dataset):
     ):
 
         self.transform = transform
-        self.scale = scale
         self.crop = crop
         self.random_crop_size = random_crop_size
         self.bg_per_img = number_of_bg_slices_per_image
@@ -75,11 +73,8 @@ class FungusDataset(Dataset):
         if self.crop > 1:
             image = self.crop_image(h, idx, image, w)
 
-        scaled = None
 
         if self.transform:
-            if self.scale:
-                scaled = (int(h // self.scale), int(w // self.scale))
 
             mask_path = self.paths[int(
                 idx / self.crop / (self.bg_per_img + self.fg_per_img))]
@@ -100,8 +95,8 @@ class FungusDataset(Dataset):
             y, x = where[int(center)]
             image = image[y - self.random_crop_size: y + self.random_crop_size,
                           x - self.random_crop_size: x + self.random_crop_size]
-
-            image = self.transform(image, scaled)
+            image = np.expand_dims(image, axis=2)
+            image = self.transform(image)
 
         sample = {
             'image': image,

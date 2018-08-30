@@ -32,7 +32,6 @@ if __name__ == '__main__':
                         action='store_true', help='enable test mode')
     parser.add_argument('--prefix', default='', help='result filenames prefix')
     parser.add_argument('--size', default=125, type=int, help='random crop radius')
-    parser.add_argument('--scale', default=None, type=float, help='scale factor')
     args = parser.parse_args()
     device = features.get_cuda()
     dataset = FungusDataset(
@@ -41,8 +40,7 @@ if __name__ == '__main__':
         random_crop_size=args.size,
         number_of_bg_slices_per_image=1,
         number_of_fg_slices_per_image=16,
-        train=not args.test,
-        scale=args.scale)
+        train=not args.test)
     loader = data.DataLoader(
         dataset,
         batch_size=32,
