@@ -5,7 +5,8 @@ import numpy as np
 from DataLoader.img_files import test_paths
 from DataLoader.img_files import train_paths
 from DataLoader.normalization import normalize_image
-from skimage import io, transform
+from skimage import io
+from skimage import transform
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
@@ -73,7 +74,6 @@ class FungusDataset(Dataset):
         if self.crop > 1:
             image = self.crop_image(h, idx, image, w)
 
-
         if self.transform:
 
             mask_path = self.paths[int(
@@ -85,14 +85,26 @@ class FungusDataset(Dataset):
                 where = np.argwhere(mask == 2)
             elif 1 in mask:
                 where = np.argwhere(mask == 1)
+                old_class = img_class
                 img_class = 'BG'
             else:
                 warnings.warn(
                     'No background on image of class {}. Only fg will be returned.'.format(img_class))
                 where = np.argwhere(mask == 2)
 
-            center = np.random.uniform(high=where.shape[0])
-            y, x = where[int(center)]
+            cntr = 1000
+            y, x = -1, -1
+            offset = self.random_crop_size
+            while y < offset or y > image.shape[0] - offset or x < offset or x > image.shape[1] - offset:
+                center = np.random.uniform(high=where.shape[0])
+                y, x = where[int(center)]
+                cntr -= 1
+                if cntr == 0:
+                    warnings.warn(
+                        'Not enough background, switching to foreground.')
+                    img_class = old_class
+                    where = np.argwhere(mask == 2)
+
             image = image[y - self.random_crop_size: y + self.random_crop_size,
                           x - self.random_crop_size: x + self.random_crop_size]
             image = np.stack((image, image, image), axis=2)
