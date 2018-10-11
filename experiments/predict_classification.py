@@ -34,15 +34,15 @@ if __name__ == '__main__':
                         action='store_true', help='enable test mode')
     args = parser.parse_args()
     if args.test:
-        filename_prefix = 'results/test_'
+        filename_prefix = '../results/test_'
     else:
-        filename_prefix = 'results/train_'
+        filename_prefix = '../results/train_'
     feature_matrix_filename = filename_prefix + 'feature_matrix.npy'
     labels_filename = filename_prefix + 'labels.npy'
     feature_matrix = np.load(feature_matrix_filename)
     labels = np.load(labels_filename)
     if args.test:
-        pipeline = joblib.load('results/best_model.pkl')
+        pipeline = joblib.load('../results/2_3_250_50p_best_model.pkl')
     else:
         pipeline.fit(feature_matrix, labels)
     log.info('Accuracy {}'.format(pipeline.score(feature_matrix, labels)))

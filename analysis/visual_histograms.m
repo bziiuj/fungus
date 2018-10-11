@@ -1,12 +1,12 @@
 
 clear;
-load('../results/train_bow.mat');
+load('../../analysis/train_bow.mat');
 labels = labels + 1;
 labels_names = {'CA', 'CG', 'CL', 'CN', 'CP', 'CT', 'MF', 'SB', 'SC', 'BG'};
 
 %%
 
-step = floor(size(cluster_patches, 4) / 5) - 1;
+step = floor(size(cluster_patches, 4) / 13) - 1;
 [x, y] = meshgrid(1:step:size(cluster_patches, 4), 1:step:size(cluster_patches, 4));
 x = x(:); y = y(:);
 
@@ -37,7 +37,7 @@ end
 
 %%
 
-load('results/test_bow.mat');
+load('../../analysis/test_bow.mat');
 labels = labels + 1;
 
 %%

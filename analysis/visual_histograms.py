@@ -22,15 +22,15 @@ import scipy.io as sio
 
 if __name__ == '__main__':
     fv = FisherVectorTransformer(gmm_samples_number=5000)
-    svc = svm.SVC(C=10.0, kernel='linear')
+    svc = svm.SVC(C=1000.0, gamma=0.001, kernel='rbf')
 
     # load train and test data
-    train_image_patches = np.load('results/train_image_patches.npy')
-    train_feature_matrix = np.load('results/train_feature_matrix.npy')
-    train_labels = np.load('results/train_labels.npy')
-    test_image_patches = np.load('results/test_image_patches.npy')
-    test_feature_matrix = np.load('results/test_feature_matrix.npy')
-    test_labels = np.load('results/test_labels.npy')
+    train_image_patches = np.load('../analysis/train_image_patches.npy')
+    train_feature_matrix = np.load('../analysis/train_feature_matrix.npy')
+    train_labels = np.load('../analysis/train_labels.npy')
+    test_image_patches = np.load('../analysis/test_image_patches.npy')
+    test_feature_matrix = np.load('../analysis/test_feature_matrix.npy')
+    test_labels = np.load('../analysis/test_labels.npy')
 
     # fit gmm with train data
     fv.fit(train_feature_matrix)
@@ -62,21 +62,21 @@ if __name__ == '__main__':
         dist_ = cdist(train_feature_matrix[d, :], fv.gmm_[0].transpose())
         train_bows.append(np.histogram(dist_.argmin(axis=1), bins=np.arange(train_distances.shape[1] + 1))[0])
     train_bows = np.stack(train_bows)
-    sio.savemat('results/train_bow.mat', {'cluster_patches': train_cluster_patches,
-                                          'labels': train_labels,
-                                          'bows': train_bows,
-                                          'train_cluster_patches_locations': train_cluster_patches_locations})
+    sio.savemat('../analysis/train_bow.mat', {'cluster_patches': train_cluster_patches,
+                                              'labels': train_labels,
+                                              'bows': train_bows,
+                                              'train_cluster_patches_locations': train_cluster_patches_locations})
 
-    # generate train bow
+    # generate test bow
     test_bows = []
     for d in range(test_feature_matrix.shape[0]):
         dist_ = cdist(test_feature_matrix[d, :], fv.gmm_[0].transpose())
         test_bows.append(np.histogram(dist_.argmin(axis=1), bins=np.arange(test_distances.shape[1] + 1))[0])
     test_bows = np.stack(test_bows)
-    sio.savemat('results/test_bow.mat', {'cluster_patches': train_cluster_patches,
-                                         'labels': test_labels,
-                                         'bows': test_bows,
-                                         'train_cluster_patches_locations': train_cluster_patches_locations})
+    sio.savemat('../analysis/test_bow.mat', {'cluster_patches': train_cluster_patches,
+                                             'labels': test_labels,
+                                             'bows': test_bows,
+                                             'train_cluster_patches_locations': train_cluster_patches_locations})
 
     # fit classifier check accuracy
     svc.fit(train_fv_matrix, train_labels)

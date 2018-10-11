@@ -85,7 +85,11 @@ class FungusDataset(Dataset):
             if self.dir is not None:
                 mask_path = os.path.join(self.dir, mask_path)
             mask = io.imread(mask_path)
-            if (idx % (self.bg_per_img + self.fg_per_img)) > self.bg_per_img:
+            mask[:self.random_crop_size, :] = 0
+            mask[-self.random_crop_size:, :] = 0
+            mask[:, :self.random_crop_size] = 0
+            mask[:, -self.random_crop_size:] = 0
+            if (idx % (self.bg_per_img + self.fg_per_img)) > self.bg_per_img and (mask == 2).sum() > 0:
                 where = np.argwhere(mask == 2)
             elif 1 in mask:
                 where = np.argwhere(mask == 1)
