@@ -101,9 +101,13 @@ class FungusDataset(Dataset):
                 cntr -= 1
                 if cntr == 0:
                     warnings.warn(
-                        'Not enough background, switching to foreground.')
-                    img_class = old_class
-                    where = np.argwhere(mask == 2)
+                        'Toggling image class')
+                    if img_class == 'BG':
+                        img_class = old_class
+                        where = np.argwhere(mask == 2)
+                    else:
+                        img_class = 'BG'
+                        where = np.argwhere(mask == 1)
 
             image = image[y - self.random_crop_size: y + self.random_crop_size,
                           x - self.random_crop_size: x + self.random_crop_size]
