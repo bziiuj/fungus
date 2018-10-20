@@ -16,13 +16,16 @@ import logging as log
 import numpy as np
 from sklearn import svm
 
+from sklearn.externals import joblib
+from sklearn.pipeline import Pipeline
 from pipeline.classification import FisherVectorTransformer  # isort:skip
 from scipy.spatial.distance import cdist
 import scipy.io as sio
 
+
 if __name__ == '__main__':
     fv = FisherVectorTransformer(gmm_samples_number=5000)
-    svc = svm.SVC(C=1000.0, gamma=0.001, kernel='rbf')
+    svc = svm.SVC(C=1000.0, gamma=0.001, kernel='rbf', probability=True)
 
     # load train and test data
     train_image_patches = np.load('../analysis/train_image_patches.npy')
@@ -80,5 +83,14 @@ if __name__ == '__main__':
 
     # fit classifier check accuracy
     svc.fit(train_fv_matrix, train_labels)
+
+    pipeline = Pipeline(
+        steps=[
+            ('fisher_vector', fv),
+            ('svc', svc)
+        ]
+    )
+    joblib.dump(pipeline, '../analysis/2_3_250_50p_best_model_new.pkl')
+
     log.info('Accuracy training {}'.format(svc.score(train_fv_matrix, train_labels)))
     log.info('Accuracy test {}'.format(svc.score(test_fv_matrix, test_labels)))

@@ -1,0 +1,9 @@
+run:
+
+python extract_features.py
+python extract_features.py --test
+
+python visual_histograms.py
+python convusion_matrices.py
+
+matlab visual_histograms.m

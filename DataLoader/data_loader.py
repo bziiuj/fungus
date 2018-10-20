@@ -9,6 +9,31 @@ from torch.utils.data import DataLoader, Dataset
 
 
 class FungusDataset(Dataset):
+    FUNGUS_TO_NUMBER = {
+        'CA': 0,
+        'CG': 1,
+        'CL': 2,
+        'CN': 3,
+        'CP': 4,
+        'CT': 5,
+        'MF': 6,
+        'SB': 7,
+        'SC': 8,
+        'BG': 9,
+    }
+    NUMBER_TO_FUNGUS = {
+        0: 'CA',
+        1: 'CG',
+        2: 'CL',
+        3: 'CN',
+        4: 'CP',
+        5: 'CT',
+        6: 'MF',
+        7: 'SB',
+        8: 'SC',
+        9: 'BG',
+    }
+
     def __init__(
             self,
             transform=normalize_image,
