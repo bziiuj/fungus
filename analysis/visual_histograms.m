@@ -48,8 +48,8 @@ for c = 1:clust_count
     end
     sub_patch = patch(row_b:row_e, col_b:col_e, :);
 
-    subplot(1, 2, 1); imshow(patch); hold on; plot(col_loc(ind), row_loc(ind), 'ro');
-    subplot(1, 2, 2); imshow(sub_patch);
+    % subplot(1, 2, 1); imshow(patch); hold on; plot(col_loc(ind), row_loc(ind), 'ro');
+    % subplot(1, 2, 2); imshow(sub_patch);
 
     sub_patches(:, :, :, i) = sub_patch;
   end
