@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(
 
 import itertools
 
+from config import config  # isort:skip
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -71,54 +72,54 @@ if __name__ == '__main__':
             ('svc', svm.SVC())
         ]
     )
-    pipeline = joblib.load('../analysis/2_3_250_50p_best_model_new.pkl')
+    pipeline = joblib.load('{}/2_3_250_50p_best_model.pkl'.format(config['analysis_path']))
 
     # train
-    feature_matrix = np.load('../analysis/train_feature_matrix.npy')
-    y_true = np.load('../analysis/train_labels.npy')
+    feature_matrix = np.load('{}/train_feature_matrix.npy'.format(config['analysis_path']))
+    y_true = np.load('{}/train_labels.npy'.format(config['analysis_path']))
     y_pred = pipeline.predict(feature_matrix)
     cnf_matrix = confusion_matrix(y_true, y_pred)
     plt.figure()
     plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
                     'Train cnf matrix')
-    plt.savefig('../analysis/train_cnf_matrix.jpg')
+    plt.savefig('{}/train_cnf_matrix.jpg'.format(config['analysis_path']))
     plt.figure()
     plot_accuracy_bars(
         cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS, 'Train accuracy')
-    plt.savefig('../analysis/train_accuracy_bars.jpg')
+    plt.savefig('{}/train_accuracy_bars.jpg'.format(config['analysis_path']))
     plt.figure()
     plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
                     'Train normalized cnf matrix', normalize=True)
-    plt.savefig('../analysis/train_cnf_matrix_normalized.jpg')
+    plt.savefig('{}/train_cnf_matrix_normalized.jpg'.format(config['analysis_path']))
     plt.figure()
     probabilities = pipeline.predict_proba(feature_matrix)
     cnf_matrix = probability_confusion_matrix(
         y_true, y_pred, probabilities, FungusDataset.NUMBER_TO_FUNGUS)
     plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
                     'Train probability cnf matrix')
-    plt.savefig('../analysis/train_probability_cnf_matrix.jpg')
+    plt.savefig('{}/train_probability_cnf_matrix.jpg'.format(config['analysis_path']))
 
     # test
-    feature_matrix = np.load('../analysis/test_feature_matrix.npy')
-    y_true = np.load('../analysis/test_labels.npy')
+    feature_matrix = np.load('{}/test_feature_matrix.npy'.format(config['analysis_path']))
+    y_true = np.load('{}/test_labels.npy'.format(config['analysis_path']))
     y_pred = pipeline.predict(feature_matrix)
     cnf_matrix = confusion_matrix(y_true, y_pred)
     plt.figure()
     plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
                     'Test cnf matrix')
-    plt.savefig('../analysis/test_cnf_matrix.jpg')
+    plt.savefig('{}/test_cnf_matrix.jpg'.format(config['analysis_path']))
     plt.figure()
     plot_accuracy_bars(
         cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS, 'Test accuracy')
-    plt.savefig('../analysis/test_accuracy_bars.jpg')
+    plt.savefig('{}/test_accuracy_bars.jpg'.format(config['analysis_path']))
     plt.figure()
     plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
                     'Test normalized cnf matrix', normalize=True)
-    plt.savefig('../analysis/test_cnf_matrix_normalized.jpg')
+    plt.savefig('{}/test_cnf_matrix_normalized.jpg'.format(config['analysis_path']))
     plt.figure()
     probabilities = pipeline.predict_proba(feature_matrix)
     cnf_matrix = probability_confusion_matrix(
         y_true, y_pred, probabilities, FungusDataset.NUMBER_TO_FUNGUS)
     plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
                     'Test probability cnf matrix')
-    plt.savefig('../analysis/test_probability_cnf_matrix.jpg')
+    plt.savefig('{}/test_probability_cnf_matrix.jpg'.format(config['analysis_path']))

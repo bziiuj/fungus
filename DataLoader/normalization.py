@@ -1,22 +1,17 @@
 from torchvision import transforms
 from PIL import Image
+import numpy as np
 
 
-def normalize_image(img, scaling=None):
-    list_of_transformations = []
-    if scaling:
-        list_of_transformations.append(transforms.Resize(scaling))
-
-    list_of_transformations.append(transforms.ToTensor())
-    list_of_transformations.append(transforms.Normalize(
-        [0.67040706, 0.67040706, 0.67040706],
-        [0.23386002, 0.23386002, 0.23386002],
-        )
-    )
-
-    normalized = transforms.Compose(list_of_transformations)(Image.fromarray(img).convert('RGB'))
-
-    return normalized
+def normalize_image(img):
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(
+            [0.7328962, 0.73332304, 0.7587824],
+            [0.24182673, 0.25079936, 0.21770595]
+        ),
+    ])
+    return transform(img)
 
 
 def generate_means_and_stds(path):

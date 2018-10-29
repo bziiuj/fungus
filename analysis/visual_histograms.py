@@ -16,6 +16,7 @@ import logging as log
 import numpy as np
 from sklearn import svm
 
+from config import config  # isort:skip
 from sklearn.externals import joblib
 from sklearn.pipeline import Pipeline
 from pipeline.classification import FisherVectorTransformer  # isort:skip
@@ -28,12 +29,12 @@ if __name__ == '__main__':
     svc = svm.SVC(C=1000.0, gamma=0.001, kernel='rbf', probability=True)
 
     # load train and test data
-    train_image_patches = np.load('../analysis/train_image_patches.npy')
-    train_feature_matrix = np.load('../analysis/train_feature_matrix.npy')
-    train_labels = np.load('../analysis/train_labels.npy')
-    test_image_patches = np.load('../analysis/test_image_patches.npy')
-    test_feature_matrix = np.load('../analysis/test_feature_matrix.npy')
-    test_labels = np.load('../analysis/test_labels.npy')
+    train_image_patches = np.load('{}/train_image_patches.npy'.format(config['analysis_path']))
+    train_feature_matrix = np.load('{}/train_feature_matrix.npy'.format(config['analysis_path']))
+    train_labels = np.load('{}/train_labels.npy'.format(config['analysis_path']))
+    test_image_patches = np.load('{}/test_image_patches.npy'.format(config['analysis_path']))
+    test_feature_matrix = np.load('{}/test_feature_matrix.npy'.format(config['analysis_path']))
+    test_labels = np.load('{}/test_labels.npy'.format(config['analysis_path']))
 
     # fit gmm with train data
     fv.fit(train_feature_matrix)
@@ -47,7 +48,7 @@ if __name__ == '__main__':
     test_distances = cdist(test_feature_matrix.reshape(-1, 256), fv.gmm_[0].transpose())
 
     # get n_samples patches closest to gmm clusters (together with precise location of the closest fragment)
-    n_samples = 7
+    n_samples = 25
     train_cluster_patches = []
     train_cluster_patches_locations = []
     for d in range(train_distances.shape[1]):
@@ -65,10 +66,10 @@ if __name__ == '__main__':
         dist_ = cdist(train_feature_matrix[d, :], fv.gmm_[0].transpose())
         train_bows.append(np.histogram(dist_.argmin(axis=1), bins=np.arange(train_distances.shape[1] + 1))[0])
     train_bows = np.stack(train_bows)
-    sio.savemat('../analysis/train_bow.mat', {'cluster_patches': train_cluster_patches,
-                                              'labels': train_labels,
-                                              'bows': train_bows,
-                                              'train_cluster_patches_locations': train_cluster_patches_locations})
+    sio.savemat('{}/train_bow.mat'.format(config['analysis_path']), {'cluster_patches': train_cluster_patches,
+                                                                     'labels': train_labels,
+                                                                     'bows': train_bows,
+                                                                     'train_cluster_patches_locations': train_cluster_patches_locations})
 
     # generate test bow
     test_bows = []
@@ -76,10 +77,10 @@ if __name__ == '__main__':
         dist_ = cdist(test_feature_matrix[d, :], fv.gmm_[0].transpose())
         test_bows.append(np.histogram(dist_.argmin(axis=1), bins=np.arange(test_distances.shape[1] + 1))[0])
     test_bows = np.stack(test_bows)
-    sio.savemat('../analysis/test_bow.mat', {'cluster_patches': train_cluster_patches,
-                                             'labels': test_labels,
-                                             'bows': test_bows,
-                                             'train_cluster_patches_locations': train_cluster_patches_locations})
+    sio.savemat('{}/test_bow.mat'.format(config['analysis_path']), {'cluster_patches': train_cluster_patches,
+                                                                    'labels': test_labels,
+                                                                    'bows': test_bows,
+                                                                    'train_cluster_patches_locations': train_cluster_patches_locations})
 
     # fit classifier check accuracy
     svc.fit(train_fv_matrix, train_labels)
@@ -90,7 +91,7 @@ if __name__ == '__main__':
             ('svc', svc)
         ]
     )
-    joblib.dump(pipeline, '../analysis/2_3_250_50p_best_model_new.pkl')
+    joblib.dump(pipeline, '{}/2_3_250_50p_best_model.pkl'.format(config['analysis_path']))
 
     log.info('Accuracy training {}'.format(svc.score(train_fv_matrix, train_labels)))
     log.info('Accuracy test {}'.format(svc.score(test_fv_matrix, test_labels)))

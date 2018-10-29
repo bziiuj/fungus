@@ -6,7 +6,6 @@ import logging as log
 import numpy as np
 import torch
 from torchvision import models
-from tqdm import tqdm
 
 
 def get_cuda():
@@ -40,14 +39,18 @@ def compute_feature_matrix(loader, device, extractor=None):
     extractor - pytorch model used to extract features, if None then AlexNet will be used
     """
     with torch.no_grad():
-        image_patches = torch.tensor([], dtype=torch.float, device=device)
+        image_patches = torch.tensor([], dtype=torch.uint8, device=device)
         feature_matrix = torch.tensor([], dtype=torch.float, device=device)
         labels = torch.tensor([], dtype=torch.long)
-        for i, sample in enumerate(tqdm(loader)):
+        for i, sample in enumerate(loader):
+            print(i)
+            orig_X = sample['orig_image'].to(device)
             X = sample['image'].to(device)
             y_true = sample['class']
             X_features = extract_features(X, device, extractor)
-            image_patches = torch.cat((image_patches, X), dim=0)
+
             feature_matrix = torch.cat((feature_matrix, X_features), dim=0)
+            image_patches = torch.cat((image_patches, orig_X), dim=0)
             labels = torch.cat((labels, y_true), dim=0)
+
     return image_patches.cpu().numpy(), feature_matrix.cpu().numpy(), labels.numpy()
