@@ -31,7 +31,8 @@ if __name__ == '__main__':
     parser.add_argument('--test', default=False,
                         action='store_true', help='enable test mode')
     parser.add_argument('--prefix', default='', help='result filenames prefix')
-    parser.add_argument('--size', default=125, type=int, help='random crop radius')
+    parser.add_argument('--size', default=125, type=int,
+                        help='random crop radius')
     args = parser.parse_args()
     device = features.get_cuda()
     dataset = FungusDataset(
@@ -47,7 +48,8 @@ if __name__ == '__main__':
         shuffle=True,
         num_workers=1,
         pin_memory=True)
-    feature_matrix, labels = features.compute_feature_matrix(loader, device)
+    image_patches, feature_matrix, labels = features.compute_feature_matrix(
+        loader, device)
     if args.test:
         filename_prefix = 'results/test_'
     else:
@@ -56,8 +58,10 @@ if __name__ == '__main__':
         filename_prefix += args.prefix + '_'
     feature_matrix_filename = filename_prefix + 'feature_matrix.npy'
     labels_filename = filename_prefix + 'labels.npy'
+    image_patches_filename = filename_prefix + 'image_patches.npy'
     np.save(feature_matrix_filename, feature_matrix)
     np.save(labels_filename, labels)
+    np.save(image_patches_filename, image_patches)
 
     unique, counts = np.unique(labels, return_counts=True)
     stats = dict(zip(unique.tolist(), counts.tolist()))

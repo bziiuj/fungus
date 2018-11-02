@@ -40,12 +40,14 @@ def compute_feature_matrix(loader, device, extractor=None):
     extractor - pytorch model used to extract features, if None then AlexNet will be used
     """
     with torch.no_grad():
+        image_patches = torch.tensor([], dtype=torch.float, device=device)
         feature_matrix = torch.tensor([], dtype=torch.float, device=device)
         labels = torch.tensor([], dtype=torch.long)
         for i, sample in enumerate(tqdm(loader)):
             X = sample['image'].to(device)
             y_true = sample['class']
             X_features = extract_features(X, device, extractor)
+            image_patches = torch.cat((image_patches, X), dim=0)
             feature_matrix = torch.cat((feature_matrix, X_features), dim=0)
             labels = torch.cat((labels, y_true), dim=0)
-    return feature_matrix.cpu().numpy(), labels.numpy()
+    return image_patches.cpu().numpy(), feature_matrix.cpu().numpy(), labels.numpy()

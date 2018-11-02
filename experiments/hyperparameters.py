@@ -26,14 +26,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--prefix', default='', help='input file prefix')
     args = parser.parse_args()
-    
+
     pipeline = Pipeline(
         steps=[
             ('fisher_vector', FisherVectorTransformer()),
             ('svc', svm.SVC(probability=True))
         ]
     )
-    
+
     filename_prefix = 'results/train_'
     if args.prefix:
         filename_prefix += args.prefix + '_'
@@ -60,4 +60,3 @@ if __name__ == '__main__':
         model_filename += args.prefix + '_'
     model_filename += 'best_model.pkl'
     joblib.dump(pipeline, model_filename)
-
