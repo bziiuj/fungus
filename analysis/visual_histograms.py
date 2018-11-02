@@ -21,6 +21,51 @@ from pipeline.classification import FisherVectorTransformer  # isort:skip
 plt.switch_backend('agg')
 
 
+def generate_bows(feature_matrix, fv, distances):
+    bows = []
+    for d in range(feature_matrix.shape[0]):
+        dist_ = cdist(feature_matrix[d, :], fv.gmm_[0].transpose())
+        bows.append(np.histogram(dist_.argmin(axis=1),
+                                 bins=np.arange(distances.shape[1] + 1))[0])
+    return np.stack(bows)
+
+
+# similarity mosaic
+
+def plot_similarity_mosaic(distances, patches, train=False):
+    for i in range(distances.shape[1]):
+        plt.figure(dpi=300)
+        dist = distances[:, i]
+        order = np.argpartition(dist, 5 * 5, axis=0)
+        print(order.shape)
+        closest_patches = patches[order[:25] //
+                                  train_feature_matrix.shape[1], :, :, :]
+        print(closest_patches.shape)
+        for j, patch in enumerate(closest_patches):
+            plt.subplot(5, 5, j + 1)
+            plt.axis('off')
+            print(patch.shape)
+            plt.imshow(np.moveaxis(patch, 0, -1))
+        if train:
+            filename_prefix = 'train_similarity_mosaic_'
+        else:
+            filename_prefix = 'test_similarity_mosaic_'
+        plt.savefig(filename_prefix + str(i) + '.png')
+        plt.close()
+
+
+def plot_boxplot(bows, labels, name):
+    flierprops = dict(marker='+', markerfacecolor='red')
+    plt.figure(figsize=(10, 10), dpi=300)
+    for i in range(10):
+        i_bows = bows[labels == i, :]
+        plt.subplot(2, 5, i + 1)
+        plt.boxplot(i_bows, flierprops=flierprops)
+        plt.title(FungusDataset.NUMBER_TO_FUNGUS[i])
+    plt.savefig(name)
+    plt.close()
+
+
 if __name__ == '__main__':
     fv = FisherVectorTransformer(gmm_samples_number=5000)
     svc = svm.SVC(C=10.0, kernel='linear')
@@ -47,96 +92,37 @@ if __name__ == '__main__':
         test_feature_matrix.reshape(-1, 256), fv.gmm_[0].transpose())
 
     # get n_samples patches closest to gmm clusters (together with precise location of the closest fragment)
-    n_samples = 7
-    train_cluster_patches = []
-    train_cluster_patches_locations = []
-    for d in range(train_distances.shape[1]):
-        dist_ = train_distances[:, d]
-        order_ = np.argsort(dist_)
-        # take three closest patches
-        three_ = order_[:n_samples] // train_feature_matrix.shape[1]
-        train_cluster_patches.append(train_image_patches[three_, :, :, :])
-        train_cluster_patches_locations.append(
-            order_[:n_samples] % train_feature_matrix.shape[1])
-    train_cluster_patches = np.stack(train_cluster_patches)
-    train_cluster_patches_locations = np.stack(train_cluster_patches_locations)
+    # n_samples = 7
+    # train_cluster_patches = []
+    # train_cluster_patches_locations = []
+    # for d in range(train_distances.shape[1]):
+    #     dist_ = train_distances[:, d]
+    #     order_ = np.argsort(dist_)
+    #     # take three closest patches
+    #     three_ = order_[:n_samples] // train_feature_matrix.shape[1]
+    #     train_cluster_patches.append(train_image_patches[three_, :, :, :])
+    #     # TODO why modulo?
+    #     train_cluster_patches_locations.append(
+    #         order_[:n_samples] % train_feature_matrix.shape[1])
+    # train_cluster_patches = np.stack(train_cluster_patches)
+    # train_cluster_patches_locations = np.stack(train_cluster_patches_locations)
 
     # generate train bow
-    train_bows = []
-    for d in range(train_feature_matrix.shape[0]):
-        dist_ = cdist(train_feature_matrix[d, :], fv.gmm_[0].transpose())
-        train_bows.append(np.histogram(dist_.argmin(axis=1),
-                                       bins=np.arange(train_distances.shape[1] + 1))[0])
-    train_bows = np.stack(train_bows)
-    # sio.savemat('results/train_bow.mat', {'cluster_patches': train_cluster_patches,
-    # 'labels': train_labels,
-    # 'bows': train_bows,
-    # 'train_cluster_patches_locations': train_cluster_patches_locations})
-    #
-    # generate test bow
-    test_bows = []
-    for d in range(test_feature_matrix.shape[0]):
-        dist_ = cdist(test_feature_matrix[d, :], fv.gmm_[0].transpose())
-        test_bows.append(np.histogram(dist_.argmin(axis=1),
-                                      bins=np.arange(test_distances.shape[1] + 1))[0])
-    test_bows = np.stack(test_bows)
-    # sio.savemat('results/test_bow.mat', {'cluster_patches': train_cluster_patches,
-    # 'labels': test_labels,
-    # 'bows': test_bows,
-    # 'train_cluster_patches_locations': train_cluster_patches_locations})
-    #
-    # fit classifier check accuracy
+    train_bows = generate_bows(train_feature_matrix, fv, train_distances)
+    test_bows = generate_bows(test_feature_matrix, fv, test_distances)
+
+    # compute accuracy
     svc.fit(train_fv_matrix, train_labels)
     log.info('Accuracy training {}'.format(
         svc.score(train_fv_matrix, train_labels)))
     log.info('Accuracy test {}'.format(svc.score(test_fv_matrix, test_labels)))
 
+    # similarity mosaics
+    # TODO why clipping occurs?
+    # TODO should be colorful
+    plot_similarity_mosaic(train_distances, train_image_patches, True)
+    plot_similarity_mosaic(test_distances, test_image_patches, False)
 
-dim = train_cluster_patches.shape[3]
-step = dim // 5 - 1
-print(train_cluster_patches.shape)
-print(step)
-print(range(dim, step))
-x, y = np.meshgrid(range(dim, step), range(dim, step))
-print(x)
-print(y)
-x = x[:]
-y = y[:]
-print(x)
-print(y)
-
-# TODO in matlab the `c` below is then shadowed by for loop, is this intentional?
-# cluster_count, image_count, c, h, w = train_cluster_patches.shape
-# plt.figure(dpi=300)
-# for c in range(cluster_count):
-#     for i in range(image_count):
-#         # in matlab mean is computed along first dimension which size is not equal to 1
-#         # as this is invoked after squeeze then it should be computed along 0 axis
-#         means = np.mean(np.squeeze(train_cluster_patches[c, i, :, :, :]), axis=0)
-#         patch = np.squeeze(means)
-#         plt.subplot(image_count, cluster_count, i * cluster_count + c + 1)
-#         indicators = train_cluster_patches_locations[c, i]
-#         # should this be y, x or x, y?
-#         plt.plot(y[indicators], x[indicators], 'ro')
-#         plt.axis('off')
-#         plt.imshow(patch)
-# plt.savefig('test.png')
-# plt.close()
-
-# box plots
-
-
-def plot_boxplot(bows, labels, name):
-    flierprops = dict(marker='+', markerfacecolor='red')
-    plt.figure(figsize=(10, 10), dpi=300)
-    for i in range(10):
-        i_bows = bows[labels == i, :]
-        plt.subplot(2, 5, i + 1)
-        plt.boxplot(i_bows, flierprops=flierprops)
-        plt.title(FungusDataset.NUMBER_TO_FUNGUS[i])
-    plt.savefig(name)
-    plt.close()
-
-
-plot_boxplot(train_bows, train_labels, 'train_boxplot.png')
-plot_boxplot(test_bows, test_labels, 'test_boxplot.png')
+    # boxplots
+    plot_boxplot(train_bows, train_labels, 'train_boxplot.png')
+    plot_boxplot(test_bows, test_labels, 'test_boxplot.png')
