@@ -74,4 +74,3 @@ if __name__ == '__main__':
                             img = np.clip(img, -1, 1)
                             io.imsave(str(y_true[i]) + '_miss_' + str(
                                 miss_labels[y_true[i]][j]) + '_' + str(j) + '.jpg', np.moveaxis(img, 0, -1))
-                            print('kurwa')
