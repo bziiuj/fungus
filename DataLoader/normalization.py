@@ -35,5 +35,5 @@ if __name__ == '__main__':
     from glob import iglob
     means, stds = compute_means_and_standard_deviations(iglob('../pngs/*/*1*'))
     print(means, stds)
-    np.save(means, 'results/means.npy')
-    np.save(stds, 'results/stds.npy')
+    np.save('results/means.npy', means)
+    np.save('results/stds.npy', stds)
