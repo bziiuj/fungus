@@ -30,21 +30,16 @@ def generate_bows(feature_matrix, fv, distances):
     return np.stack(bows)
 
 
-# similarity mosaic
-
 def plot_similarity_mosaic(distances, patches, train=False):
     for i in range(distances.shape[1]):
         plt.figure(dpi=300)
         dist = distances[:, i]
         order = np.argpartition(dist, 5 * 5, axis=0)
-        print(order.shape)
         closest_patches = patches[order[:25] //
                                   train_feature_matrix.shape[1], :, :, :]
-        print(closest_patches.shape)
         for j, patch in enumerate(closest_patches):
             plt.subplot(5, 5, j + 1)
             plt.axis('off')
-            print(patch.shape)
             plt.imshow(np.moveaxis(patch, 0, -1))
         if train:
             filename_prefix = 'train_similarity_mosaic_'
@@ -91,22 +86,6 @@ if __name__ == '__main__':
     test_distances = cdist(
         test_feature_matrix.reshape(-1, 256), fv.gmm_[0].transpose())
 
-    # get n_samples patches closest to gmm clusters (together with precise location of the closest fragment)
-    # n_samples = 7
-    # train_cluster_patches = []
-    # train_cluster_patches_locations = []
-    # for d in range(train_distances.shape[1]):
-    #     dist_ = train_distances[:, d]
-    #     order_ = np.argsort(dist_)
-    #     # take three closest patches
-    #     three_ = order_[:n_samples] // train_feature_matrix.shape[1]
-    #     train_cluster_patches.append(train_image_patches[three_, :, :, :])
-    #     # TODO why modulo?
-    #     train_cluster_patches_locations.append(
-    #         order_[:n_samples] % train_feature_matrix.shape[1])
-    # train_cluster_patches = np.stack(train_cluster_patches)
-    # train_cluster_patches_locations = np.stack(train_cluster_patches_locations)
-
     # generate train bow
     train_bows = generate_bows(train_feature_matrix, fv, train_distances)
     test_bows = generate_bows(test_feature_matrix, fv, test_distances)
@@ -118,8 +97,6 @@ if __name__ == '__main__':
     log.info('Accuracy test {}'.format(svc.score(test_fv_matrix, test_labels)))
 
     # similarity mosaics
-    # TODO why clipping occurs?
-    # TODO should be colorful
     plot_similarity_mosaic(train_distances, train_image_patches, True)
     plot_similarity_mosaic(test_distances, test_image_patches, False)
 
