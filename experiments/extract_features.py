@@ -17,10 +17,9 @@ import numpy as np
 import yaml
 from torch.utils import data
 
-from config import config  # isort:skip
-from DataLoader import FungusDataset  # isort:skip
-from pipeline import features  # isort:skip
-
+from config import config
+from DataLoader import FungusDataset
+from pipeline import features
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)

@@ -11,12 +11,12 @@ import logging as log
 import matplotlib
 import numpy as np
 import scipy.io as sio
-from DataLoader import FungusDataset
 from matplotlib import pyplot as plt
 from scipy.spatial.distance import cdist
 from sklearn import svm
 
-from pipeline.classification import FisherVectorTransformer  # isort:skip
+from DataLoader import FungusDataset
+from pipeline.classification import FisherVectorTransformer
 
 plt.switch_backend('agg')
 

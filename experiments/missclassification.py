@@ -16,11 +16,10 @@ from sklearn.pipeline import Pipeline
 from torch.utils import data
 from tqdm import tqdm
 
-from config import config  # isort:skip
-from pipeline.classification import FisherVectorTransformer  # isort:skip
-from DataLoader import FungusDataset  # isort:skip
-from pipeline import features  # isort:skip
-
+from config import config
+from DataLoader import FungusDataset
+from pipeline import features
+from pipeline.classification import FisherVectorTransformer
 
 if __name__ == '__main__':
     pipeline = Pipeline(

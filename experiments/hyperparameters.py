@@ -19,8 +19,8 @@ from sklearn import svm
 from sklearn.externals import joblib
 from sklearn.pipeline import Pipeline
 
-from config import config  # isort:skip
-from pipeline.classification import FisherVectorTransformer  # isort:skip
+from config import config
+from pipeline.classification import FisherVectorTransformer
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

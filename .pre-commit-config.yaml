@@ -9,7 +9,11 @@
     -   id: end-of-file-fixer
     -   id: mixed-line-ending
     -   id: trailing-whitespace
+-   repo: https://github.com/asottile/seed-isort-config
+    rev: v1.3.0
+    hooks:
+    -   id: seed-isort-config
 -   repo: https://github.com/pre-commit/mirrors-isort
-    sha: v4.3.4
+    rev: v4.3.4
     hooks:
     -   id: isort

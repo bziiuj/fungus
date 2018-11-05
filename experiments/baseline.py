@@ -9,21 +9,21 @@ import argparse
 import logging as log
 
 import numpy as np
+import torch
 from sklearn.pipeline import Pipeline
 from torchvision import models
-import torch
 
-from pipeline.features import get_cuda  # isort:skip
-
+from pipeline.features import get_cuda
 
 if __name__ == '__main__':
     device = get_cuda()
     device = torch.device('cpu')
     classifier = models.alexnet(pretrained=True).classifier.eval().to(device)
-    
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--prefix', default='', help='input files prefix')
-    parser.add_argument('--test', default=False, action='store_true', help='enable test mode')
+    parser.add_argument('--test', default=False,
+                        action='store_true', help='enable test mode')
     args = parser.parse_args()
     if args.test:
         filename_prefix = 'results/test_'
@@ -40,4 +40,3 @@ if __name__ == '__main__':
     labels = np.load(labels_filename)
     print(labels.shape)
     print(labels_pred.size())
-    

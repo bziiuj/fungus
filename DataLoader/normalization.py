@@ -1,6 +1,6 @@
-from torchvision import transforms
-from PIL import Image
 import numpy as np
+from PIL import Image
+from torchvision import transforms
 
 
 def normalize_image(img):
@@ -23,15 +23,19 @@ def generate_means_and_stds(path):
     stds = []
     for i in img_list:
         img = io.imread(i)
-        t_img = transforms.ToTensor()(np.asarray(Image.fromarray(np.asarray(img)).convert('RGB')))
+        t_img = transforms.ToTensor()(np.asarray(
+            Image.fromarray(np.asarray(img)).convert('RGB')))
         np_t_img = t_img.numpy()
-        means.append([np.mean(np_t_img[i, :, :]) for i in range(np_t_img.shape[0])])
-        stds.append([np.std(np_t_img[i, :, :]) for i in range(np_t_img.shape[0])])
+        means.append([np.mean(np_t_img[i, :, :])
+                      for i in range(np_t_img.shape[0])])
+        stds.append([np.std(np_t_img[i, :, :])
+                     for i in range(np_t_img.shape[0])])
 
     means = np.asarray(means)
     stds = np.asarray(stds)
     print(np.mean(means, axis=0))
     print(np.mean(stds, axis=0))
+
 
 if __name__ == '__main__':
     generate_means_and_stds('../pngs/*/*1*')

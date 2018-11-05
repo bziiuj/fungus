@@ -9,12 +9,13 @@ import itertools
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from DataLoader import FungusDataset
-from pipeline.classification import FisherVectorTransformer
 from sklearn import svm
 from sklearn.externals import joblib
 from sklearn.metrics import confusion_matrix
 from sklearn.pipeline import Pipeline
+
+from DataLoader import FungusDataset
+from pipeline.classification import FisherVectorTransformer
 
 plt.switch_backend('agg')
 
@@ -137,5 +138,3 @@ if __name__ == '__main__':
                     'Test probability cnf matrix')
     plt.savefig(test_filename_prefix + 'probability_cnf_matrix.jpg')
     print(pipeline.score(feature_matrix, y_true))
-
-
