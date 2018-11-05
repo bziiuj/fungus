@@ -17,7 +17,6 @@ import numpy as np
 import yaml
 from torch.utils import data
 
-from config import config
 from DataLoader import FungusDataset
 from pipeline import features
 

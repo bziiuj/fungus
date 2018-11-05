@@ -19,7 +19,6 @@ from sklearn import svm
 from sklearn.externals import joblib
 from sklearn.pipeline import Pipeline
 
-from config import config
 from pipeline.classification import FisherVectorTransformer
 
 if __name__ == '__main__':
