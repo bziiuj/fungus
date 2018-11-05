@@ -52,13 +52,10 @@ def probability_confusion_matrix(y_true, y_pred, probabilities, classes):
     for i in range(len(y_true)):
         matrix[y_true[i], y_pred[i]] += probabilities[i, y_pred[i]]
         count_matrix[y_true[i], y_pred[i]] += 1
-    tmp = np.divide(matrix, count_matrix)
-    return tmp
+    return np.divide(matrix, count_matrix)
 
 
 def plot_accuracy_bars(cnf_matrix, classes, title):
-    print(np.diag(cnf_matrix))
-    print(np.sum(cnf_matrix, axis=1))
     accuracy = np.diag(cnf_matrix) / np.sum(cnf_matrix, axis=1)
     plt.title(title)
     plt.bar(classes.values(), accuracy)
@@ -110,7 +107,6 @@ if __name__ == '__main__':
     plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
                     'Train probability cnf matrix')
     plt.savefig(train_filename_prefix + 'probability_cnf_matrix.jpg')
-    print(pipeline.score(feature_matrix, y_true))
 
     # test
     test_filename_prefix = filename_prefix.format('test')
@@ -137,4 +133,3 @@ if __name__ == '__main__':
     plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
                     'Test probability cnf matrix')
     plt.savefig(test_filename_prefix + 'probability_cnf_matrix.jpg')
-    print(pipeline.score(feature_matrix, y_true))
