@@ -10,12 +10,8 @@ mask23_dir="/home/arccha/fungus_data_png/masks_2_3/"
 mask1350p_dir="/home/arccha/fungus_data_png/masks_1_3_50p/"
 mask1250p_dir="/home/arccha/fungus_data_png/masks_1_2_50p/"
 mask2350p_dir="/home/arccha/fungus_data_png/masks_2_3_50p/"
-#masks="1_3 1_2 2_3"
-#sizes="125 250 500"
-#scales="0.5 1.0"
-
-masks="1_3"
-sizes="500"
+masks="1_3 1_2 2_3"
+sizes="125 250 500"
 scales="0.5 1.0"
 
 for mask in $masks
