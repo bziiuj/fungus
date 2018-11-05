@@ -14,6 +14,7 @@ from DataLoader.normalization import normalize_image
 
 
 class ImageSegment(IntEnum):
+    NONE = 0
     BACKGROUND = 1
     FOREGROUND = 2
 
@@ -74,47 +75,51 @@ class FungusDataset(Dataset):
     def __len__(self):
         return len(self.paths) * self.crop * (self.fg_per_img + self.bg_per_img)
 
-    def __getitem__(self, idx):
-        image, img_class = self.get_image_and_image_class(idx)
-        h, w = image.shape
+    def _read_mask(self, idx):
+        mask_path = self.paths[int(
+            idx / self.crop / (self.bg_per_img + self.fg_per_img))]
+        if self.masks_dir is not None:
+            mask_path = os.path.join(self.masks_dir, mask_path)
+        mask = io.imread(mask_path)
+        return mask
 
-        if self.transform:
-            mask_path = self.paths[int(
-                idx / self.crop / (self.bg_per_img + self.fg_per_img))]
-            if self.masks_dir is not None:
-                mask_path = os.path.join(self.masks_dir, mask_path)
-            mask = io.imread(mask_path)
-            if (idx % (self.bg_per_img + self.fg_per_img)) > self.bg_per_img:
+    def _is_foreground_patch(self, idx):
+        return (idx % (self.bg_per_img + self.fg_per_img)) > self.bg_per_img
+
+    def __getitem__(self, idx):
+        image, img_class = self._read_image_and_class(idx)
+        mask = self._read_mask(idx)
+
+        # set appropriate offsets in order to choose only full sized patches
+        mask[:self.random_crop_size, :] = ImageSegment.NONE
+        mask[-self.random_crop_size:, :] = ImageSegment.NONE
+        mask[:, :self.random_crop_size] = ImageSegment.NONE
+        mask[:, -self.random_crop_size:] = ImageSegment.NONE
+
+        if self._is_foreground_patch(idx):
+            if ImageSegment.FOREGROUND in mask:
                 where = np.argwhere(mask == ImageSegment.FOREGROUND)
-            elif ImageSegment.BACKGROUND in mask:
-                where = np.argwhere(mask == ImageSegment.BACKGROUND)
-                old_class = img_class
-                img_class = 'BG'
             else:
                 warnings.warn(
-                    'No background on image of class {}. Only fg will be returned.'.format(img_class))
+                    'Should generate foreground patch from {} class, but no foreground found in mask. Toggling to background.'.format(img_class))
+                where = np.argwhere(mask == ImageSegment.BACKGROUND)
+                img_class = 'BG'
+        else:
+            if ImageSegment.BACKGROUND in mask:
+                where = np.argwhere(mask == ImageSegment.BACKGROUND)
+                img_class = 'BG'
+
+            else:
+                warnings.warn(
+                    'Should generate background patch from {} class, but no background found in mask. Toggling to foreground.'.format(img_class))
                 where = np.argwhere(mask == ImageSegment.FOREGROUND)
 
-            cntr = 1000
-            y, x = -1, -1
-            offset = self.random_crop_size
-            while y < offset or y > image.shape[0] - offset or x < offset or x > image.shape[1] - offset:
-                center = np.random.uniform(high=where.shape[0])
-                y, x = where[int(center)]
-                cntr -= 1
-                if cntr == 0:
-                    warnings.warn(
-                        'Toggling image class')
-                    if img_class == 'BG':
-                        img_class = old_class
-                        where = np.argwhere(mask == ImageSegment.FOREGROUND)
-                    else:
-                        img_class = 'BG'
-                        where = np.argwhere(mask == ImageSegment.BACKGROUND)
-
-            image = image[y - self.random_crop_size: y + self.random_crop_size,
-                          x - self.random_crop_size: x + self.random_crop_size]
-            image = np.stack((image, image, image), axis=2)
+        center = np.random.uniform(high=where.shape[0])
+        y, x = where[int(center)]
+        image = image[y - self.random_crop_size:y + self.random_crop_size,
+                      x - self.random_crop_size:x + self.random_crop_size,
+                      :]
+        if self.transform:
             image = self.transform(image)
 
         return {
@@ -122,7 +127,7 @@ class FungusDataset(Dataset):
             'class': self.FUNGUS_TO_NUMBER[img_class],
         }
 
-    def get_image_and_image_class(self, idx):
+    def _read_image_and_class(self, idx):
         img_class = self.paths[int(
             idx / self.crop / (self.bg_per_img + self.fg_per_img))].split('/')[-1][:2]
         path = self.paths[int(
