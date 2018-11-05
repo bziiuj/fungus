@@ -19,7 +19,7 @@ class FisherVectorTransformer(BaseEstimator, TransformerMixin):
         X = X.reshape(-1, X.shape[2])
         if len(X) < self.gmm_samples_number:
             raise AttributeError(
-                'Number of samples must be greater than number of GMM samples')
+                'Number of samples must be greater than the number of GMM samples')
         indices = np.random.choice(
             X.shape[0], self.gmm_samples_number, replace=False)
         X = X[indices, :]

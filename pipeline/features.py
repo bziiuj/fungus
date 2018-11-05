@@ -27,10 +27,7 @@ def extract_features(images, device, extractor=None):
         extractor = models.alexnet(pretrained=True).features.eval().to(device)
     features = extractor(images)
     N, C, W, H = features.size()
-    features = features.reshape(N, C, W * H).transpose_(2, 1)
-    log.debug('images {} features before {} after {}'.format(
-        images.size(), (N, C, W, H), features.size()))
-    return features
+    return features.reshape(N, C, W * H).transpose_(2, 1)
 
 
 def compute_feature_matrix(loader, device, extractor=None):
