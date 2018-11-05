@@ -39,15 +39,16 @@ if __name__ == '__main__':
         filename_prefix += args.prefix + '_'
 
     feature_matrix = np.load(filename_prefix + 'feature_matrix.npy')
+    print(feature_matrix.shape)
     labels = np.load(filename_prefix + 'labels.npy')
     param_grid = [
         {
-            'fisher_vector__gmm_samples_number': [5000, 10000],
+            'fisher_vector__gmm_samples_number': [1000, 5000, 10000, 100000],
             'svc__C': [1, 10, 100, 1000],
             'svc__kernel': ['linear']
         },
         {
-            'fisher_vector__gmm_samples_number': [5000, 10000],
+            'fisher_vector__gmm_samples_number': [1000, 5000, 10000, 100000],
             'svc__C': [1, 10, 100, 1000],
             'svc__gamma': [0.001, 0.0001],
             'svc__kernel': ['rbf']
