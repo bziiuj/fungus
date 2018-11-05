@@ -48,7 +48,6 @@ class FungusDataset(Dataset):
     def __init__(
             self,
             transform=normalize_image,
-            crop=1,
             random_crop_size=125,
             number_of_bg_slices_per_image=0,
             number_of_fg_slices_per_image=8,
@@ -59,7 +58,6 @@ class FungusDataset(Dataset):
     ):
 
         self.transform = transform
-        self.crop = crop
         self.random_crop_size = random_crop_size
         self.bg_per_img = number_of_bg_slices_per_image
         self.fg_per_img = number_of_fg_slices_per_image
@@ -73,11 +71,11 @@ class FungusDataset(Dataset):
         np.random.seed(seed)
 
     def __len__(self):
-        return len(self.paths) * self.crop * (self.fg_per_img + self.bg_per_img)
+        return len(self.paths) * (self.fg_per_img + self.bg_per_img)
 
     def _read_mask(self, idx):
         mask_path = self.paths[int(
-            idx / self.crop / (self.bg_per_img + self.fg_per_img))]
+            idx / (self.bg_per_img + self.fg_per_img))]
         if self.masks_dir is not None:
             mask_path = os.path.join(self.masks_dir, mask_path)
         mask = io.imread(mask_path)
@@ -129,9 +127,9 @@ class FungusDataset(Dataset):
 
     def _read_image_and_class(self, idx):
         img_class = self.paths[int(
-            idx / self.crop / (self.bg_per_img + self.fg_per_img))].split('/')[-1][:2]
+            idx / (self.bg_per_img + self.fg_per_img))].split('/')[-1][:2]
         path = self.paths[int(
-            idx / self.crop / (self.bg_per_img + self.fg_per_img))]
+            idx / (self.bg_per_img + self.fg_per_img))]
         if self.pngs_dir is not None:
             path = os.path.join(self.pngs_dir, path)
         image = io.imread(path)
