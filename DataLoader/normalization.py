@@ -1,41 +1,39 @@
+import functools
+
 import numpy as np
-from PIL import Image
+from skimage import io
 from torchvision import transforms
 
 
 def normalize_image(img):
+    means, stds = read_means_and_standard_deviations(
+        'results/means.npy', 'results/stds.npy')
     transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(
-            [0.67049974, 0.67049974, 0.67049974],
-            [0.23363926, 0.23363926, 0.23363926]
-        ),
+        transforms.Normalize(means, stds),
     ])
     return transform(img)
 
 
-def generate_means_and_stds(path):
-    from skimage import io
-    from glob import glob
-    import numpy as np
-    img_list = glob(path)
-    means = []
-    stds = []
-    for i in img_list:
-        img = io.imread(i)
-        t_img = transforms.ToTensor()(np.asarray(
-            Image.fromarray(np.asarray(img)).convert('RGB')))
-        np_t_img = t_img.numpy()
-        means.append([np.mean(np_t_img[i, :, :])
-                      for i in range(np_t_img.shape[0])])
-        stds.append([np.std(np_t_img[i, :, :])
-                     for i in range(np_t_img.shape[0])])
+@functools.lru_cache(maxsize=8)
+def read_means_and_standard_deviations(means_path, stds_path):
+    return np.load(means_path), np.load(stds_path)
 
-    means = np.asarray(means)
-    stds = np.asarray(stds)
-    print(np.mean(means, axis=0))
-    print(np.mean(stds, axis=0))
+
+def compute_means_and_standard_deviations(paths):
+    means, stds = [], []
+    for path in paths:
+        img = io.imread(path)
+        means.append(np.mean(img, axis=(0, 1)))
+        stds.append(np.std(img, axis=(0, 1)))
+    means = np.array(means)
+    stds = np.array(stds)
+    return np.mean(means, axis=0), np.std(stds, axis=0)
 
 
 if __name__ == '__main__':
-    generate_means_and_stds('../pngs/*/*1*')
+    from glob import iglob
+    means, stds = compute_means_and_standard_deviations(iglob('../pngs/*/*1*'))
+    print(means, stds)
+    np.save(means, 'results/means.npy')
+    np.save(stds, 'results/stds.npy')
