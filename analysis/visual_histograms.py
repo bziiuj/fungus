@@ -6,6 +6,7 @@ import sys  # isort:skip
 sys.path.insert(0, os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..')))  # isort:skip
 
+import argparse
 import logging as log
 
 import matplotlib
@@ -30,7 +31,8 @@ def generate_bows(feature_matrix, fv, distances):
     return np.stack(bows)
 
 
-def plot_similarity_mosaic(distances, patches, train=False):
+def plot_similarity_mosaic(distances, patches, filename_prefix):
+    filename_prefix += 'similarity_mosaic_'
     for i in range(distances.shape[1]):
         plt.figure(dpi=300)
         dist = distances[:, i]
@@ -41,10 +43,6 @@ def plot_similarity_mosaic(distances, patches, train=False):
             plt.subplot(5, 5, j + 1)
             plt.axis('off')
             plt.imshow(np.moveaxis(patch, 0, -1))
-        if train:
-            filename_prefix = 'train_similarity_mosaic_'
-        else:
-            filename_prefix = 'test_similarity_mosaic_'
         plt.savefig(filename_prefix + str(i) + '.png')
         plt.close()
 
@@ -62,16 +60,23 @@ def plot_boxplot(bows, labels, name):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--prefix')
+    args = parser.parse_args()
+
     fv = FisherVectorTransformer(gmm_samples_number=5000)
     svc = svm.SVC(C=10.0, kernel='linear')
 
     # load train and test data
-    train_image_patches = np.load('results/train_image_patches.npy')
-    train_feature_matrix = np.load('results/train_feature_matrix.npy')
-    train_labels = np.load('results/train_labels.npy')
-    test_image_patches = np.load('results/test_image_patches.npy')
-    test_feature_matrix = np.load('results/test_feature_matrix.npy')
-    test_labels = np.load('results/test_labels.npy')
+    train_filename_prefix = 'results/train_' + args.prefix + '_'
+    test_filename_prefix = 'results/test_' + args.prefix + '_'
+    train_image_patches = np.load(train_filename_prefix + 'image_patches.npy')
+    train_feature_matrix = np.load(
+        train_filename_prefix + 'feature_matrix.npy')
+    train_labels = np.load(train_filename_prefix + 'labels.npy')
+    test_image_patches = np.load(test_filename_prefix + 'image_patches.npy')
+    test_feature_matrix = np.load(test_filename_prefix + 'feature_matrix.npy')
+    test_labels = np.load(test_filename_prefix + 'labels.npy')
 
     # fit gmm with train data
     fv.fit(train_feature_matrix)
@@ -97,9 +102,12 @@ if __name__ == '__main__':
     log.info('Accuracy test {}'.format(svc.score(test_fv_matrix, test_labels)))
 
     # similarity mosaics
-    plot_similarity_mosaic(train_distances, train_image_patches, True)
-    plot_similarity_mosaic(test_distances, test_image_patches, False)
+    plot_similarity_mosaic(
+        train_distances, train_image_patches, train_filename_prefix)
+    plot_similarity_mosaic(
+        test_distances, test_image_patches, test_filename_prefix)
 
     # boxplots
-    plot_boxplot(train_bows, train_labels, 'train_boxplot.png')
-    plot_boxplot(test_bows, test_labels, 'test_boxplot.png')
+    plot_boxplot(train_bows, train_labels,
+                 train_filename_prefix + 'boxplot.png')
+    plot_boxplot(test_bows, test_labels, test_filename_prefix + 'boxplot.png')
