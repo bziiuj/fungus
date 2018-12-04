@@ -73,24 +73,24 @@ class FungusDataset(Dataset):
     def __len__(self):
         return len(self.paths) * (self.fg_per_img + self.bg_per_img)
 
-    def _read_mask(self, idx):
-        mask_path = self.paths[idx]
+    def _read_mask(self, image_idx):
+        mask_path = self.paths[image_idx]
         mask_path = os.path.join(self.masks_dir, mask_path)
         return io.imread(mask_path)
 
-    def _read_image_and_class(self, idx):
-        path = self.paths[idx]
+    def _read_image_and_class(self, image_idx):
+        path = self.paths[image_idx]
         image_class = path.split('/')[-1][:2]
         path = os.path.join(self.pngs_dir, path)
         return io.imread(path), image_class
 
-    def _is_foreground_patch(self, idx):
+    def _is_foreground_patch(self, sequence_idx):
         return (idx % (self.bg_per_img + self.fg_per_img)) > self.bg_per_img
 
-    def __getitem__(self, idx):
-        index = idx // (self.bg_per_img + self.fg_per_img)
-        image, image_class = self._read_image_and_class(index)
-        mask = self._read_mask(index)
+    def __getitem__(self, sequence_idx):
+        image_idx = sequence_idx // (self.bg_per_img + self.fg_per_img)
+        image, image_class = self._read_image_and_class(image_idx)
+        mask = self._read_mask(image_idx)
 
         # set appropriate offsets in order to choose only full sized patches
         mask[:self.random_crop_size, :] = ImageSegment.NONE
@@ -99,7 +99,7 @@ class FungusDataset(Dataset):
         mask[:, -self.random_crop_size:] = ImageSegment.NONE
 
         # prepare a set of coordinates to randomly choose patch center
-        if self._is_foreground_patch(idx):
+        if self._is_foreground_patch(sequence_idx):
             if ImageSegment.FOREGROUND in mask:
                 where = np.argwhere(mask == ImageSegment.FOREGROUND)
             else:
