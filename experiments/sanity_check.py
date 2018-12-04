@@ -64,7 +64,6 @@ if __name__ == '__main__':
         print(i)
         print(sample['image'].shape)
         save_image(sample['image'][0], 'check.png')
-        # save_grid_plot(sample['image'])
 
         if i == 0:
             break
