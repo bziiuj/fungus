@@ -8,6 +8,7 @@ import argparse
 
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
 import yaml
 from torch.utils import data
 from torchvision import transforms
@@ -29,6 +30,10 @@ def save_grid_plot(images):
 
 
 if __name__ == '__main__':
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.manual_seed(SEED)
+    np.random.seed(SEED)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         'pngs_dir', help='absolute path to directory with pngs')

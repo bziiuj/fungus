@@ -12,6 +12,7 @@ import logging as log
 import matplotlib
 import numpy as np
 import scipy.io as sio
+import torch
 from matplotlib import pyplot as plt
 from scipy.spatial.distance import cdist
 from sklearn import svm
@@ -60,6 +61,10 @@ def plot_boxplot(bows, labels, name):
 
 
 if __name__ == '__main__':
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.manual_seed(SEED)
+    np.random.seed(SEED)
     parser = argparse.ArgumentParser()
     parser.add_argument('--prefix')
     args = parser.parse_args()

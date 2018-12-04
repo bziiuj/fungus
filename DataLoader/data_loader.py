@@ -51,7 +51,6 @@ class FungusDataset(Dataset):
             random_crop_size=125,
             number_of_bg_slices_per_image=0,
             number_of_fg_slices_per_image=8,
-            seed=9001,
             train=True,
             pngs_dir=None,
             masks_dir=None
@@ -70,7 +69,6 @@ class FungusDataset(Dataset):
             self.paths = train_paths
         else:
             self.paths = test_paths
-        np.random.seed(seed)
 
     def __len__(self):
         return len(self.paths) * (self.fg_per_img + self.bg_per_img)

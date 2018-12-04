@@ -22,6 +22,10 @@ from sklearn.pipeline import Pipeline
 from pipeline.classification import FisherVectorTransformer
 
 if __name__ == '__main__':
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.manual_seed(SEED)
+    np.random.seed(SEED)
     parser = argparse.ArgumentParser()
     parser.add_argument('--prefix', default='', help='input file prefix')
     args = parser.parse_args()

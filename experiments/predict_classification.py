@@ -14,6 +14,7 @@ import argparse
 import logging as log
 
 import numpy as np
+import torch
 from sklearn import svm
 from sklearn.externals import joblib
 from sklearn.pipeline import Pipeline
@@ -21,6 +22,10 @@ from sklearn.pipeline import Pipeline
 from pipeline.classification import FisherVectorTransformer
 
 if __name__ == '__main__':
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.manual_seed(SEED)
+    np.random.seed(SEED)
     pipeline = Pipeline(
         steps=[
             ('fisher_vector', FisherVectorTransformer()),

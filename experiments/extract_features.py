@@ -21,6 +21,11 @@ from DataLoader import FungusDataset
 from pipeline import features
 
 if __name__ == '__main__':
+    SEED = 9001
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.manual_seed(SEED)
+    np.random.seed(SEED)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         'pngs_dir', help='absolute path to directory with pngs')
@@ -45,7 +50,8 @@ if __name__ == '__main__':
         batch_size=32,
         shuffle=True,
         num_workers=1,
-        pin_memory=True)
+        pin_memory=True,
+        worker_init_fn=lambda x: np.random.seed(torch.initial_seed()))
     image_patches, feature_matrix, labels = features.compute_feature_matrix(
         loader, device)
     if args.test:

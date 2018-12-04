@@ -9,6 +9,7 @@ import itertools
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
 from sklearn import svm
 from sklearn.externals import joblib
 from sklearn.metrics import confusion_matrix
@@ -64,6 +65,10 @@ def plot_accuracy_bars(cnf_matrix, classes, title):
 
 
 if __name__ == '__main__':
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.manual_seed(SEED)
+    np.random.seed(SEED)
     parser = argparse.ArgumentParser()
     parser.add_argument('--prefix', default='', help='input file prefix')
     args = parser.parse_args()
