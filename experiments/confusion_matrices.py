@@ -16,7 +16,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.pipeline import Pipeline
 
 from dataset import FungusDataset
-from pipeline.classification import FisherVectorTransformer
+from pipeline import FisherVectorTransformer
 
 plt.switch_backend('agg')
 

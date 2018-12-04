@@ -19,7 +19,7 @@ from sklearn import svm
 from sklearn.externals import joblib
 from sklearn.pipeline import Pipeline
 
-from pipeline.classification import FisherVectorTransformer
+from pipeline import FisherVectorTransformer
 
 if __name__ == '__main__':
     torch.backends.cudnn.deterministic = True

@@ -18,7 +18,7 @@ from scipy.spatial.distance import cdist
 from sklearn import svm
 
 from dataset import FungusDataset
-from pipeline.classification import FisherVectorTransformer
+from pipeline import FisherVectorTransformer
 
 plt.switch_backend('agg')
 
