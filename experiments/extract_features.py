@@ -17,7 +17,7 @@ import numpy as np
 import yaml
 from torch.utils import data
 
-from DataLoader import FungusDataset
+from dataset import FungusDataset
 from pipeline import features
 
 if __name__ == '__main__':

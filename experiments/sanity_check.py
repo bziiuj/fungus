@@ -15,7 +15,7 @@ from torchvision import transforms
 from torchvision.utils import make_grid
 from torchvision.utils import save_image
 
-from DataLoader import FungusDataset
+from dataset import FungusDataset
 from pipeline import features
 
 plt.switch_backend('agg')

@@ -17,7 +17,7 @@ from matplotlib import pyplot as plt
 from scipy.spatial.distance import cdist
 from sklearn import svm
 
-from DataLoader import FungusDataset
+from dataset import FungusDataset
 from pipeline.classification import FisherVectorTransformer
 
 plt.switch_backend('agg')

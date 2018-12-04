@@ -8,9 +8,9 @@ from skimage import transform
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
-from DataLoader.img_files import test_paths
-from DataLoader.img_files import train_paths
-from DataLoader.normalization import normalize_image
+from dataset.img_files import test_paths
+from dataset.img_files import train_paths
+from dataset.normalization import normalize_image
 
 
 class ImageSegment(IntEnum):

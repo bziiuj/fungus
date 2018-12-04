@@ -15,7 +15,7 @@ from sklearn.externals import joblib
 from sklearn.metrics import confusion_matrix
 from sklearn.pipeline import Pipeline
 
-from DataLoader import FungusDataset
+from dataset import FungusDataset
 from pipeline.classification import FisherVectorTransformer
 
 plt.switch_backend('agg')
