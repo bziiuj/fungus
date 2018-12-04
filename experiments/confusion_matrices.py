@@ -21,7 +21,19 @@ from pipeline.classification import FisherVectorTransformer
 plt.switch_backend('agg')
 
 
-def plot_cnf_matrix(matrix, classes, title, normalize=False):
+def probability_confusion_matrix(y_true, y_pred, probabilities, classes):
+    n_classes = len(classes.keys())
+    dim = (n_classes, n_classes)
+    matrix = np.zeros(dim)
+    count_matrix = np.zeros(dim)
+    for i in range(len(y_true)):
+        matrix[y_true[i], y_pred[i]] += probabilities[i, y_pred[i]]
+        count_matrix[y_true[i], y_pred[i]] += 1
+    return np.divide(matrix, count_matrix)
+
+
+def plot_cnf_matrix(matrix, classes, title, filename, normalize=False):
+    plt.figure()
     if normalize:
         matrix = matrix.astype('float') / matrix.sum(axis=1)[:, np.newaxis]
     plt.imshow(matrix, interpolation='nearest', cmap=plt.cm.Blues)
@@ -43,25 +55,50 @@ def plot_cnf_matrix(matrix, classes, title, normalize=False):
     plt.tight_layout()
     plt.ylabel('True')
     plt.xlabel('Predicted')
+    plt.savefig(filename)
 
 
-def probability_confusion_matrix(y_true, y_pred, probabilities, classes):
-    n_classes = len(classes.keys())
-    dim = (n_classes, n_classes)
-    matrix = np.zeros(dim)
-    count_matrix = np.zeros(dim)
-    for i in range(len(y_true)):
-        matrix[y_true[i], y_pred[i]] += probabilities[i, y_pred[i]]
-        count_matrix[y_true[i], y_pred[i]] += 1
-    return np.divide(matrix, count_matrix)
-
-
-def plot_accuracy_bars(cnf_matrix, classes, title):
+def plot_accuracy_bars(cnf_matrix, classes, title, filename):
+    plt.figure()
     accuracy = np.diag(cnf_matrix) / np.sum(cnf_matrix, axis=1)
     plt.title(title)
     plt.bar(classes.values(), accuracy)
     plt.ylabel('Accuracy')
     plt.xlabel('Classes')
+    plt.savefig(filename)
+
+
+def generate_charts(mode, filename_mask, prefix):
+    # Prepare data
+    feature_matrix = np.load(filename_mask.format(
+        mode + '_', args.prefix, 'feature_matrix.npy'))
+    y_true = np.load(filename_mask.format(
+        mode + '_', args.prefix, 'labels.npy'))
+    y_pred = pipeline.predict(feature_matrix)
+    cnf_matrix = confusion_matrix(y_true, y_pred)
+    probabilities = pipeline.predict_proba(feature_matrix)
+    proba_cnf_matrix = probability_confusion_matrix(
+        y_true, y_pred, probabilities, FungusDataset.NUMBER_TO_FUNGUS)
+
+    # Plot charts
+    plot_cnf_matrix(cnf_matrix,
+                    FungusDataset.NUMBER_TO_FUNGUS,
+                    mode + ' cnf matrix',
+                    filename_mask.format(mode, prefix, 'cnf_matrix.png'))
+    plot_accuracy_bars(cnf_matrix,
+                       FungusDataset.NUMBER_TO_FUNGUS,
+                       mode + ' accuracy',
+                       filename_mask.format(mode, prefix, 'accuracy_bars.png'))
+    plot_cnf_matrix(cnf_matrix,
+                    FungusDataset.NUMBER_TO_FUNGUS,
+                    mode + ' normalized cnf matrix',
+                    filename_mask.format(
+                        mode, prefix, 'normalized_cnf_matrix.png'),
+                    normalize=True)
+    plot_cnf_matrix(proba_cnf_matrix,
+                    FungusDataset.NUMBER_TO_FUNGUS,
+                    mode + ' probability cnf matrix',
+                    filename_mask.format(mode, prefix, 'probability_cnf_matrix.png'))
 
 
 if __name__ == '__main__':
@@ -72,9 +109,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--prefix', default='', help='input file prefix')
     args = parser.parse_args()
-    filename_prefix = 'results/{}_'
-    if args.prefix:
-        filename_prefix += args.prefix + '_'
+    filename_mask = 'results/{}{}{}'
+    prefix = '' if not args.prefix else args.prefix + '_'
 
     pipeline = Pipeline(
         steps=[
@@ -82,59 +118,8 @@ if __name__ == '__main__':
             ('svc', svm.SVC())
         ]
     )
-    model_prefix = 'results/'
-    if args.prefix:
-        model_prefix += args.prefix + '_'
-    pipeline = joblib.load(model_prefix + 'best_model.pkl')
+    pipeline = joblib.load(filename_mask.format(
+        '', args.prefix, 'best_model.pkl'))
 
-    # train
-    train_filename_prefix = filename_prefix.format('train')
-    feature_matrix = np.load(train_filename_prefix + 'feature_matrix.npy')
-    y_true = np.load(train_filename_prefix + 'labels.npy')
-    y_pred = pipeline.predict(feature_matrix)
-    cnf_matrix = confusion_matrix(y_true, y_pred)
-    plt.figure()
-    plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
-                    'Train cnf matrix')
-    plt.savefig(train_filename_prefix + 'cnf_matrix.jpg')
-    plt.figure()
-    plot_accuracy_bars(
-        cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS, 'Train accuracy')
-    plt.savefig(train_filename_prefix + 'accuracy_bars.jpg')
-    plt.figure()
-    plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
-                    'Train normalized cnf matrix', normalize=True)
-    plt.savefig(train_filename_prefix + 'cnf_matrix_normalized.jpg')
-    plt.figure()
-    probabilities = pipeline.predict_proba(feature_matrix)
-    cnf_matrix = probability_confusion_matrix(
-        y_true, y_pred, probabilities, FungusDataset.NUMBER_TO_FUNGUS)
-    plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
-                    'Train probability cnf matrix')
-    plt.savefig(train_filename_prefix + 'probability_cnf_matrix.jpg')
-
-    # test
-    test_filename_prefix = filename_prefix.format('test')
-    feature_matrix = np.load(test_filename_prefix + 'feature_matrix.npy')
-    y_true = np.load(test_filename_prefix + 'labels.npy')
-    y_pred = pipeline.predict(feature_matrix)
-    cnf_matrix = confusion_matrix(y_true, y_pred)
-    plt.figure()
-    plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
-                    'Test cnf matrix')
-    plt.savefig(test_filename_prefix + 'cnf_matrix.jpg')
-    plt.figure()
-    plot_accuracy_bars(
-        cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS, 'Test accuracy')
-    plt.savefig(test_filename_prefix + 'accuracy_bars.jpg')
-    plt.figure()
-    plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
-                    'Test normalized cnf matrix', normalize=True)
-    plt.savefig(test_filename_prefix + 'cnf_matrix_normalized.jpg')
-    plt.figure()
-    probabilities = pipeline.predict_proba(feature_matrix)
-    cnf_matrix = probability_confusion_matrix(
-        y_true, y_pred, probabilities, FungusDataset.NUMBER_TO_FUNGUS)
-    plot_cnf_matrix(cnf_matrix, FungusDataset.NUMBER_TO_FUNGUS,
-                    'Test probability cnf matrix')
-    plt.savefig(test_filename_prefix + 'probability_cnf_matrix.jpg')
+    generate_charts('train', prefix, filename_mask)
+    generate_charts('test', prefix, filename_mask)
