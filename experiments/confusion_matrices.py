@@ -67,34 +67,37 @@ def plot_accuracy_bars(cnf_matrix, classes, title, filename):
     plt.savefig(filename)
 
 
-def generate_charts(mode, result_dir, prefix):
+def generate_charts(mode, results_dir, prefix):
+    filename_prefix = '{}/{}/{}'.format(results_dir, prefix, mode)
+
     # Prepare data
-    feature_matrix = np.load('{}/{}_{}_{}'.format(result_dir, mode, args.prefix, 'feature_matrix.npy'))
-    y_true = np.load('{}/{}_{}_{}'.format(result_dir, mode, args.prefix, 'labels.npy'))
+    feature_matrix = np.load('{}_{}'.format(filename_prefix, 'feature_matrix.npy'))
+    y_true = np.load('{}_{}'.format(filename_prefix, 'labels.npy'))
+
     y_pred = pipeline.predict(feature_matrix)
+
     cnf_matrix = confusion_matrix(y_true, y_pred)
     probabilities = pipeline.predict_proba(feature_matrix)
-    proba_cnf_matrix = probability_confusion_matrix(
-        y_true, y_pred, probabilities, FungusDataset.NUMBER_TO_FUNGUS)
+    proba_cnf_matrix = probability_confusion_matrix(y_true, y_pred, probabilities, FungusDataset.NUMBER_TO_FUNGUS)
 
     # Plot charts
     plot_cnf_matrix(cnf_matrix,
                     FungusDataset.NUMBER_TO_FUNGUS,
-                    mode + ' cnf matrix',
-                    '{}/{}_{}_{}'.format(result_dir, mode, args.prefix, 'cnf_matrix.png'))
+                    'confusion matrix ({})'.format(mode),
+                    '{}_{}'.format(filename_prefix, 'confusion_matrix.png'))
     plot_accuracy_bars(cnf_matrix,
                        FungusDataset.NUMBER_TO_FUNGUS,
-                       mode + ' accuracy',
-                       '{}/{}_{}_{}'.format(result_dir, mode, args.prefix, 'accuracy_bars.png'))
+                       'accuracy ({})'.format(mode),
+                       '{}_{}'.format(filename_prefix, 'accuracy_bars.png'))
     plot_cnf_matrix(cnf_matrix,
                     FungusDataset.NUMBER_TO_FUNGUS,
-                    mode + ' normalized cnf matrix',
-                    '{}/{}_{}_{}'.format(result_dir, mode, args.prefix, 'normalized_cnf_matrix.png'),
+                    'normalized confusion matrix ({})'.format(mode),
+                    '{}_{}'.format(filename_prefix, 'normalized_confusion_matrix.png'),
                     normalize=True)
     plot_cnf_matrix(proba_cnf_matrix,
                     FungusDataset.NUMBER_TO_FUNGUS,
-                    mode + ' probability cnf matrix',
-                    '{}/{}_{}_{}'.format(result_dir, mode, args.prefix, 'probability_cnf_matrix.png'))
+                    'probability confusion matrix ({})'.format(mode),
+                    '{}_{}'.format(filename_prefix, 'probability_confusion_matrix.png'))
 
 
 if __name__ == '__main__':
@@ -103,6 +106,7 @@ if __name__ == '__main__':
     torch.backends.cudnn.benchmark = False
     torch.manual_seed(SEED)
     np.random.seed(SEED)
+
     parser = argparse.ArgumentParser()
     parser.add_argument('results_dir', help='absolute path to results directory')
     parser.add_argument('--prefix', help='input file prefix')

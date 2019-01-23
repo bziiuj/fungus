@@ -10,7 +10,7 @@ from sklearn.base import TransformerMixin
 class FisherVectorTransformer(BaseEstimator, TransformerMixin):
     """Fit GMM and compute Fisher vectors"""
 
-    def __init__(self, gmm_clusters_number=10, gmm_samples_number=1000, init_mode='kmeans'):
+    def __init__(self, gmm_clusters_number=10, gmm_samples_number=10000, init_mode='kmeans'):
         self.gmm_clusters_number = gmm_clusters_number
         self.gmm_samples_number = gmm_samples_number
         self.init_mode = init_mode

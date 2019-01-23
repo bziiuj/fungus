@@ -27,32 +27,34 @@ if __name__ == '__main__':
     torch.backends.cudnn.benchmark = False
     torch.manual_seed(SEED)
     np.random.seed(SEED)
-    pipeline = Pipeline(
-        steps=[
-            ('fisher_vector', FisherVectorTransformer(gmm_samples_number=10000)),
-            ('svc', svm.SVC(C=100, kernel='linear', probability=True))
-        ]
-    )
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('results_dir', help='absolute path to results directory')
     parser.add_argument('--test', default=False,
                         action='store_true', help='enable test mode')
-    parser.add_argument('--prefix', help='model prefix')
+    parser.add_argument('--prefix', default='', help='result filenames prefix')
+    parser.add_argument('--gmm-clusters-number')
+    parser.add_argument('--kernel')
+    parser.add_argument('--C')
+    parser.add_argument('--gamma')
     args = parser.parse_args()
-    if args.test:
-        filename_prefix = '{}/test_'.format(args.results_dir)
-    else:
-        filename_prefix = '{}/train_'.format(args.results_dir)
-    filename_prefix += args.prefix + '_'
-    feature_matrix_filename = filename_prefix + 'feature_matrix.npy'
-    labels_filename = filename_prefix + 'labels.npy'
-    feature_matrix = np.load(feature_matrix_filename)
-    labels = np.load(labels_filename)
+    filename_prefix = '{}/{}/{}'.format(args.results_dir, args.prefix, 'test' if args.test else 'train')
+
+    feature_matrix = np.load('{}_{}'.format(filename_prefix, 'feature_matrix.npy'))
+    labels = np.load('{}_{}'.format(filename_prefix, 'labels.npy'))
+
     if args.test:
         pipeline = joblib.load('{}/{}_best_model.pkl'.format(args.results_dir, args.prefix))
     else:
+        pipeline = Pipeline(
+            steps=[
+                ('fisher_vector', FisherVectorTransformer(gmm_clusters_number=int(args.gmm_clusters_number))),
+                ('svc', svm.SVC(C=float(args.C), kernel=args.kernel,
+                                gamma='auto' if args.gamma == 'auto' else float(args.gamma),
+                                probability=True))
+            ]
+        )
         pipeline.fit(feature_matrix, labels)
         joblib.dump(pipeline, '{}/{}_best_model.pkl'.format(args.results_dir, args.prefix))
+
     log.info('Accuracy {}: {}'.format('test' if args.test else 'train', pipeline.score(feature_matrix, labels)))
-    print('Accuracy {}: {}'.format('test' if args.test else 'train', pipeline.score(feature_matrix, labels)))
