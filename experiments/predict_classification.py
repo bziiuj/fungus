@@ -29,27 +29,30 @@ if __name__ == '__main__':
     np.random.seed(SEED)
     pipeline = Pipeline(
         steps=[
-            ('fisher_vector', FisherVectorTransformer()),
-            ('svc', svm.SVC())
+            ('fisher_vector', FisherVectorTransformer(gmm_samples_number=10000)),
+            ('svc', svm.SVC(C=100, kernel='linear', probability=True))
         ]
     )
 
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('results_dir', help='absolute path to results directory')
     parser.add_argument('--test', default=False,
                         action='store_true', help='enable test mode')
     parser.add_argument('--prefix', help='model prefix')
     args = parser.parse_args()
     if args.test:
-        filename_prefix = 'results/test_'
+        filename_prefix = '{}/test_'.format(args.results_dir)
     else:
-        filename_prefix = 'results/train_'
+        filename_prefix = '{}/train_'.format(args.results_dir)
     filename_prefix += args.prefix + '_'
     feature_matrix_filename = filename_prefix + 'feature_matrix.npy'
     labels_filename = filename_prefix + 'labels.npy'
     feature_matrix = np.load(feature_matrix_filename)
     labels = np.load(labels_filename)
     if args.test:
-        pipeline = joblib.load('results/' + args.prefix + '_best_model.pkl')
+        pipeline = joblib.load('{}/{}_best_model.pkl'.format(args.results_dir, args.prefix))
     else:
         pipeline.fit(feature_matrix, labels)
-    log.info('Accuracy {}'.format(pipeline.score(feature_matrix, labels)))
+        joblib.dump(pipeline, '{}/{}_best_model.pkl'.format(args.results_dir, args.prefix))
+    log.info('Accuracy {}: {}'.format('test' if args.test else 'train', pipeline.score(feature_matrix, labels)))
+    print('Accuracy {}: {}'.format('test' if args.test else 'train', pipeline.score(feature_matrix, labels)))

@@ -67,6 +67,7 @@ if __name__ == '__main__':
     torch.manual_seed(SEED)
     np.random.seed(SEED)
     parser = argparse.ArgumentParser()
+    parser.add_argument('results_dir', help='absolute path to results directory')
     parser.add_argument('--prefix')
     args = parser.parse_args()
 
@@ -74,8 +75,8 @@ if __name__ == '__main__':
     svc = svm.SVC(C=10.0, kernel='linear')
 
     # load train and test data
-    train_filename_prefix = 'results/train_' + args.prefix + '_'
-    test_filename_prefix = 'results/test_' + args.prefix + '_'
+    train_filename_prefix = '{}/train_{}_'.format(args.results_dir, args.prefix)
+    test_filename_prefix = '{}/test_{}_'.format(args.results_dir, args.prefix)
     train_image_patches = np.load(train_filename_prefix + 'image_patches.npy')
     train_feature_matrix = np.load(
         train_filename_prefix + 'feature_matrix.npy')

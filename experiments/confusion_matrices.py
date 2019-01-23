@@ -67,12 +67,10 @@ def plot_accuracy_bars(cnf_matrix, classes, title, filename):
     plt.savefig(filename)
 
 
-def generate_charts(mode, filename_mask, prefix):
+def generate_charts(mode, result_dir, prefix):
     # Prepare data
-    feature_matrix = np.load(filename_mask.format(
-        mode + '_', args.prefix, 'feature_matrix.npy'))
-    y_true = np.load(filename_mask.format(
-        mode + '_', args.prefix, 'labels.npy'))
+    feature_matrix = np.load('{}/{}_{}_{}'.format(result_dir, mode, args.prefix, 'feature_matrix.npy'))
+    y_true = np.load('{}/{}_{}_{}'.format(result_dir, mode, args.prefix, 'labels.npy'))
     y_pred = pipeline.predict(feature_matrix)
     cnf_matrix = confusion_matrix(y_true, y_pred)
     probabilities = pipeline.predict_proba(feature_matrix)
@@ -83,21 +81,20 @@ def generate_charts(mode, filename_mask, prefix):
     plot_cnf_matrix(cnf_matrix,
                     FungusDataset.NUMBER_TO_FUNGUS,
                     mode + ' cnf matrix',
-                    filename_mask.format(mode, prefix, 'cnf_matrix.png'))
+                    '{}/{}_{}_{}'.format(result_dir, mode, args.prefix, 'cnf_matrix.png'))
     plot_accuracy_bars(cnf_matrix,
                        FungusDataset.NUMBER_TO_FUNGUS,
                        mode + ' accuracy',
-                       filename_mask.format(mode, prefix, 'accuracy_bars.png'))
+                       '{}/{}_{}_{}'.format(result_dir, mode, args.prefix, 'accuracy_bars.png'))
     plot_cnf_matrix(cnf_matrix,
                     FungusDataset.NUMBER_TO_FUNGUS,
                     mode + ' normalized cnf matrix',
-                    filename_mask.format(
-                        mode, prefix, 'normalized_cnf_matrix.png'),
+                    '{}/{}_{}_{}'.format(result_dir, mode, args.prefix, 'normalized_cnf_matrix.png'),
                     normalize=True)
     plot_cnf_matrix(proba_cnf_matrix,
                     FungusDataset.NUMBER_TO_FUNGUS,
                     mode + ' probability cnf matrix',
-                    filename_mask.format(mode, prefix, 'probability_cnf_matrix.png'))
+                    '{}/{}_{}_{}'.format(result_dir, mode, args.prefix, 'probability_cnf_matrix.png'))
 
 
 if __name__ == '__main__':
@@ -107,19 +104,11 @@ if __name__ == '__main__':
     torch.manual_seed(SEED)
     np.random.seed(SEED)
     parser = argparse.ArgumentParser()
-    parser.add_argument('--prefix', default='', help='input file prefix')
+    parser.add_argument('results_dir', help='absolute path to results directory')
+    parser.add_argument('--prefix', help='input file prefix')
     args = parser.parse_args()
-    filename_mask = 'results/{}{}{}'
-    prefix = '' if not args.prefix else args.prefix + '_'
 
-    pipeline = Pipeline(
-        steps=[
-            ('fisher_vector', FisherVectorTransformer()),
-            ('svc', svm.SVC())
-        ]
-    )
-    pipeline = joblib.load(filename_mask.format(
-        '', args.prefix, 'best_model.pkl'))
+    pipeline = joblib.load('{}/{}_best_model.pkl'.format(args.results_dir, args.prefix))
 
-    generate_charts('train', prefix, filename_mask)
-    generate_charts('test', prefix, filename_mask)
+    generate_charts('train', args.results_dir, args.prefix)
+    generate_charts('test', args.results_dir, args.prefix)
