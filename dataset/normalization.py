@@ -6,10 +6,15 @@ import numpy as np
 from skimage import io
 from torchvision import transforms
 
+import os  # isort:skip
+import sys  # isort:skip
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..')))  # isort:skip
+
 
 def normalize_image(img):
     means, stds = read_means_and_standard_deviations(
-        'results/means.npy', 'results/stds.npy')
+        'tmp/means.npy', 'tmp/stds.npy')
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize(means, stds),
@@ -23,7 +28,7 @@ def read_means_and_standard_deviations(means_path, stds_path):
 
 
 def compute_means_and_standard_deviations(pngs_dir):
-    from img_files import train_paths
+    from dataset.img_files import train_paths
     means, stds = [], []
     for path in train_paths:
         full_path = os.path.join(pngs_dir, path)
@@ -42,5 +47,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
     means, stds = compute_means_and_standard_deviations(args.pngs_dir)
     print(means, stds)
-    np.save('results/means.npy', means)
-    np.save('results/stds.npy', stds)
+    np.save('tmp/means.npy', means)
+    np.save('tmp/stds.npy', stds)

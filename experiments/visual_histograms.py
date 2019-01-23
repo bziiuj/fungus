@@ -18,7 +18,7 @@ from scipy.spatial.distance import cdist
 from sklearn import svm
 
 from dataset import FungusDataset
-from pipeline import FisherVectorTransformer
+from pipeline.fisher_vector_transformer import FisherVectorTransformer
 
 plt.switch_backend('agg')
 
@@ -61,6 +61,7 @@ def plot_boxplot(bows, labels, name):
 
 
 if __name__ == '__main__':
+    SEED = 9001
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.manual_seed(SEED)

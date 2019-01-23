@@ -14,11 +14,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(
 import argparse
 
 import numpy as np
+import torch
 import yaml
 from torch.utils import data
 
 from dataset import FungusDataset
 from pipeline import features
+
 
 if __name__ == '__main__':
     SEED = 9001
@@ -31,6 +33,8 @@ if __name__ == '__main__':
         'pngs_dir', help='absolute path to directory with pngs')
     parser.add_argument(
         'masks_dir', help='absolute path to directory with masks')
+    parser.add_argument(
+        'results_dir', help='absolute path to results directory')
     parser.add_argument('--test', default=False,
                         action='store_true', help='enable test mode')
     parser.add_argument('--prefix', default='', help='result filenames prefix')
@@ -49,15 +53,15 @@ if __name__ == '__main__':
         dataset,
         batch_size=32,
         shuffle=True,
-        num_workers=1,
+        num_workers=0,
         pin_memory=True,
         worker_init_fn=lambda x: np.random.seed(torch.initial_seed()))
     image_patches, feature_matrix, labels = features.compute_feature_matrix(
         loader, device)
     if args.test:
-        filename_prefix = 'results/test_'
+        filename_prefix = '{}/test_'.format(args.results_dir)
     else:
-        filename_prefix = 'results/train_'
+        filename_prefix = '{}/train_'.format(args.results_dir)
     if args.prefix:
         filename_prefix += args.prefix + '_'
     feature_matrix_filename = filename_prefix + 'feature_matrix.npy'

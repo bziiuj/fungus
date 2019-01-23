@@ -1,1 +1,1 @@
-from fisher_vector_transformer import FisherVectorTransformer
+from pipeline.fisher_vector_transformer import FisherVectorTransformer

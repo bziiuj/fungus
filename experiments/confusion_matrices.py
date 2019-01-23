@@ -6,7 +6,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(
 import argparse
 import itertools
 
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -16,7 +15,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.pipeline import Pipeline
 
 from dataset import FungusDataset
-from pipeline import FisherVectorTransformer
+from pipeline.fisher_vector_transformer import FisherVectorTransformer
 
 plt.switch_backend('agg')
 
@@ -102,6 +101,7 @@ def generate_charts(mode, filename_mask, prefix):
 
 
 if __name__ == '__main__':
+    SEED = 9001
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.manual_seed(SEED)

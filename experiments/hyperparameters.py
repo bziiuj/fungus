@@ -19,9 +19,10 @@ from sklearn import svm
 from sklearn.externals import joblib
 from sklearn.pipeline import Pipeline
 
-from pipeline import FisherVectorTransformer
+from pipeline.fisher_vector_transformer import FisherVectorTransformer
 
 if __name__ == '__main__':
+    SEED = 9001
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.manual_seed(SEED)

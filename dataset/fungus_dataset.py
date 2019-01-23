@@ -12,6 +12,11 @@ from dataset.img_files import test_paths
 from dataset.img_files import train_paths
 from dataset.normalization import normalize_image
 
+import os  # isort:skip
+import sys  # isort:skip
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..')))  # isort:skip
+
 
 class ImageSegment(IntEnum):
     NONE = 0
@@ -85,7 +90,7 @@ class FungusDataset(Dataset):
         return io.imread(path), image_class
 
     def _is_foreground_patch(self, sequence_idx):
-        return (idx % (self.bg_per_img + self.fg_per_img)) > self.bg_per_img
+        return (sequence_idx % (self.bg_per_img + self.fg_per_img)) > self.bg_per_img
 
     def __getitem__(self, sequence_idx):
         image_idx = sequence_idx // (self.bg_per_img + self.fg_per_img)

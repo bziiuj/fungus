@@ -30,6 +30,7 @@ def save_grid_plot(images):
 
 
 if __name__ == '__main__':
+    SEED = 9001
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.manual_seed(SEED)
