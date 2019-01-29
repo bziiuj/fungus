@@ -13,6 +13,25 @@ sys.path.insert(0, os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..')))  # isort:skip
 
 
+class Denormalize(object):
+    def __init__(self, mean, std):
+        self.mean = mean
+        self.std = std
+
+    def __call__(self, tensor):
+        for t, m, s in zip(tensor, self.mean, self.std):
+            t.mul_(s).add_(m)
+        return tensor
+
+
+def denormalize(patch):
+    means, stds = read_means_and_standard_deviations(
+        'tmp/means.npy', 'tmp/stds.npy')
+    for i in range(3):
+        patch[:, :, i] = np.add(np.multiply(patch[:, :, i], stds[i]), means[i])
+    return patch
+
+
 def normalize_image(img):
     means, stds = read_means_and_standard_deviations(
         'tmp/means.npy', 'tmp/stds.npy')

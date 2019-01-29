@@ -58,7 +58,8 @@ class FungusDataset(Dataset):
             number_of_fg_slices_per_image=8,
             train=True,
             pngs_dir=None,
-            masks_dir=None
+            masks_dir=None,
+            reverse=False
     ):
 
         self.transform = transform
@@ -68,12 +69,13 @@ class FungusDataset(Dataset):
         self.train = train
         self.pngs_dir = pngs_dir
         self.masks_dir = masks_dir
+        self.reverse = reverse
         if not self.pngs_dir or not self.masks_dir:
             raise AttributeError('Paths to pngs and masks must be provided.')
         if self.train:
-            self.paths = train_paths
+            self.paths = train_paths if not self.reverse else test_paths
         else:
-            self.paths = test_paths
+            self.paths = test_paths if not self.reverse else train_paths
 
     def __len__(self):
         return len(self.paths) * (self.fg_per_img + self.bg_per_img)
