@@ -1,21 +1,19 @@
-import os  # isort:skip
-import sys  # isort:skip
-sys.path.insert(0, os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..')))  # isort:skip
-
 import argparse
 import itertools
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from sklearn import svm
 from sklearn.externals import joblib
 from sklearn.metrics import confusion_matrix
-from sklearn.pipeline import Pipeline
 
 from dataset import FungusDataset
-from pipeline.fisher_vector_transformer import FisherVectorTransformer
+
+import os  # isort:skip
+import sys  # isort:skip
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..')))  # isort:skip
+
 
 plt.switch_backend('agg')
 
@@ -67,37 +65,42 @@ def plot_accuracy_bars(cnf_matrix, classes, title, filename):
     plt.savefig(filename)
 
 
-def generate_charts(mode, results_dir, prefix):
-    filename_prefix = '{}/{}/{}'.format(results_dir, prefix, mode)
+def generate_charts(mode, results_dir, prefix, bow):
+    filename_prefix = '{}{}/{}_{}'.format(results_dir, prefix, mode, prefix)
 
     # Prepare data
-    feature_matrix = np.load('{}_{}'.format(filename_prefix, 'feature_matrix.npy'))
+    feature_matrix = np.load('{}_{}'.format(
+        filename_prefix, 'feature_matrix.npy'))
     y_true = np.load('{}_{}'.format(filename_prefix, 'labels.npy'))
 
     y_pred = pipeline.predict(feature_matrix)
 
     cnf_matrix = confusion_matrix(y_true, y_pred)
     probabilities = pipeline.predict_proba(feature_matrix)
-    proba_cnf_matrix = probability_confusion_matrix(y_true, y_pred, probabilities, FungusDataset.NUMBER_TO_FUNGUS)
+    proba_cnf_matrix = probability_confusion_matrix(
+        y_true, y_pred, probabilities, FungusDataset.NUMBER_TO_FUNGUS)
+
+    bow_type = 'fv' if not bow else 'bow'
 
     # Plot charts
     plot_cnf_matrix(cnf_matrix,
                     FungusDataset.NUMBER_TO_FUNGUS,
                     'confusion matrix ({})'.format(mode),
-                    '{}_{}'.format(filename_prefix, 'confusion_matrix.png'))
+                    '{}_{}_{}'.format(filename_prefix, bow_type, 'confusion_matrix.png'))
     plot_accuracy_bars(cnf_matrix,
                        FungusDataset.NUMBER_TO_FUNGUS,
                        'accuracy ({})'.format(mode),
-                       '{}_{}'.format(filename_prefix, 'accuracy_bars.png'))
+                       '{}_{}_{}'.format(filename_prefix, bow_type, 'accuracy_bars.png'))
     plot_cnf_matrix(cnf_matrix,
                     FungusDataset.NUMBER_TO_FUNGUS,
                     'normalized confusion matrix ({})'.format(mode),
-                    '{}_{}'.format(filename_prefix, 'normalized_confusion_matrix.png'),
+                    '{}_{}_{}'.format(filename_prefix, bow_type,
+                                      'normalized_confusion_matrix.png'),
                     normalize=True)
     plot_cnf_matrix(proba_cnf_matrix,
                     FungusDataset.NUMBER_TO_FUNGUS,
                     'probability confusion matrix ({})'.format(mode),
-                    '{}_{}'.format(filename_prefix, 'probability_confusion_matrix.png'))
+                    '{}_{}_{}'.format(filename_prefix, bow_type, 'probability_confusion_matrix.png'))
 
 
 if __name__ == '__main__':
@@ -108,11 +111,19 @@ if __name__ == '__main__':
     np.random.seed(SEED)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('results_dir', help='absolute path to results directory')
+    parser.add_argument(
+        'results_dir', help='absolute path to results directory')
     parser.add_argument('--prefix', help='input file prefix')
+    parser.add_argument('--bow', default=False,
+                        action='store_true', help='enable bow pipeline')
     args = parser.parse_args()
 
-    pipeline = joblib.load('{}/{}_best_model.pkl'.format(args.results_dir, args.prefix))
+    model_filename = '{}{}_{}/best_model.pkl'.format(
+        args.results_dir,
+        'fv' if not args.bow else 'bow',
+        args.prefix,
+    )
+    pipeline = joblib.load(model_filename)
 
-    generate_charts('train', args.results_dir, args.prefix)
-    generate_charts('test', args.results_dir, args.prefix)
+    generate_charts('train', args.results_dir, args.prefix, args.bow)
+    generate_charts('test', args.results_dir, args.prefix, args.bow)
