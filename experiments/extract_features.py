@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Extract features from samples obtained from FungusDataset and save them to
 .npy files. By default in train mode (use train dataset), can be switched
@@ -5,7 +6,11 @@ to test mode (use test dataset).
 
 Also calculates class statistics and saves them to yaml.
 """
-#!/usr/bin/env python
+import os  # isort:skip
+import sys  # isort:skip
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..')))  # isort:skip
+
 import argparse
 
 import numpy as np
@@ -20,12 +25,6 @@ from util.log import get_logger
 from util.log import set_excepthook
 from util.path import get_results_path
 from util.random import set_seed
-
-import os  # isort:skip
-import sys  # isort:skip
-
-sys.path.insert(0, os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..')))  # isort:skip
 
 
 def parse_arguments():

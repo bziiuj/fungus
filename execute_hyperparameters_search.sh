@@ -62,8 +62,8 @@ do
                                 else
                                         bow_type_flag="--bow"
                                 fi
-                                python3 experiments/hyperparameters.py $results_dir --prefix $prefix $bow_type_flag
-                                python3 experiments/confusion_matrices.py $results_dir --prefix $prefix  $bow_type_flag
+                                python3 experiments/hyperparameters.py --prefix $prefix $bow_type_flag
+                                python3 experiments/confusion_matrices.py --prefix $prefix  $bow_type_flag
                         done
 		done
 	done
