@@ -15,6 +15,7 @@ from sklearn.externals import joblib
 from sklearn.pipeline import Pipeline
 
 from pipeline.fisher_vector_transformer import FisherVectorTransformer
+from util.log import get_logger
 
 import os  # isort:skip
 import sys  # isort:skip
@@ -23,24 +24,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(
 
 
 if __name__ == '__main__':
-    log = logging.getLogger('fungus')
-    log.setLevel(logging.DEBUG)
-    fh = logging.FileHandler('tmp/fungus.log')
-    fh.setLevel(logging.DEBUG)
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    fh.setFormatter(formatter)
-    log.addHandler(ch)
-    log.addHandler(fh)
-
     SEED = 9001
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.manual_seed(SEED)
     np.random.seed(SEED)
+
+    log = get_logger('predict_classification')
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(

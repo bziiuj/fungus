@@ -13,7 +13,6 @@ mask2350p_dir="/home/arccha/fungus_data_png/masks_2_3_50p/"
 masks="1_3 1_2 2_3"
 sizes="125 250 500"
 scales="0.5 1.0"
-results_dir="/home/arccha/fungus_results/"
 bow_types="fv bow"
 
 for mask in $masks
@@ -63,12 +62,8 @@ do
                                 else
                                         bow_type_flag="--bow"
                                 fi
-
-                                echo "Computing ${bow_type}_${prefix}..."
-                                mkdir -p "${results_dir}/${bow_type}_${prefix}"
                                 python3 experiments/hyperparameters.py $results_dir --prefix $prefix $bow_type_flag
                                 python3 experiments/confusion_matrices.py $results_dir --prefix $prefix  $bow_type_flag
-                                break 10
                         done
 		done
 	done

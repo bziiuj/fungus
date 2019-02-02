@@ -13,7 +13,6 @@ mask2350p_dir="/home/arccha/fungus_data_png/masks_2_3_50p/"
 masks="1_3 1_2 2_3"
 sizes="125 250 500"
 scales="0.5 1.0"
-results_dir="/home/arccha/fungus_results/"
 
 for mask in $masks
 do
@@ -54,10 +53,8 @@ do
                               mask_path=$mask2350p_dir
                             fi
 			fi
-			echo "Computing ${prefix}..."
-                        mkdir -p "${results_dir}/${prefix}"
-			python3 experiments/extract_features.py $png_dir $mask_path $results_dir --prefix $prefix --size $size
-			python3 experiments/extract_features.py $png_dir $mask_path $results_dir --prefix $prefix --size $size --test
+			python3 experiments/extract_features.py $png_dir $mask_path --prefix $prefix --size $size
+			python3 experiments/extract_features.py $png_dir $mask_path --prefix $prefix --size $size --test
 		done
 	done
 done

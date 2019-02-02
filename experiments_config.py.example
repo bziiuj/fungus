@@ -1,0 +1,6 @@
+"""Module containing experiments configuration."""
+results_path = 'ABSOLUTE_RESULTS_PATH'
+seed = 9001
+batch_size = 32
+number_of_bg_slices_per_image = 1
+number_of_fg_slices_per_image = 16
