@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+import os  # isort:skip
+import sys  # isort:skip
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..')))  # isort:skip
+
 import argparse
 import itertools
 
@@ -8,12 +14,11 @@ from sklearn.externals import joblib
 from sklearn.metrics import confusion_matrix
 
 from dataset import FungusDataset
-
-import os  # isort:skip
-import sys  # isort:skip
-sys.path.insert(0, os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..')))  # isort:skip
-
+from util.config import load_config
+from util.log import get_logger
+from util.log import set_excepthook
+from util.path import get_results_path
+from util.random import set_seed
 
 plt.switch_backend('agg')
 
@@ -65,65 +70,65 @@ def plot_accuracy_bars(cnf_matrix, classes, title, filename):
     plt.savefig(filename)
 
 
-def generate_charts(mode, results_dir, prefix, bow):
-    filename_prefix = '{}{}/{}_{}'.format(results_dir, prefix, mode, prefix)
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--prefix', help='input file prefix')
+    parser.add_argument('--bow', default=False,
+                        action='store_true', help='enable bow pipeline')
+    parser.add_argument('--config', default='experiments_config.py',
+                        help='path to python module with shared experiment configuration')
+    return parser.parse_args()
 
-    # Prepare data
-    feature_matrix = np.load('{}_{}'.format(
-        filename_prefix, 'feature_matrix.npy'))
-    y_true = np.load('{}_{}'.format(filename_prefix, 'labels.npy'))
+
+def plot_all(path, mode, cnf_matrix, proba_cnf_matrix):
+    plot_accuracy_bars(cnf_matrix,
+                       FungusDataset.NUMBER_TO_FUNGUS,
+                       '{} accuracy'.format(mode),
+                       path / 'accuracy_bars.png')
+    plot_cnf_matrix(cnf_matrix,
+                    FungusDataset.NUMBER_TO_FUNGUS,
+                    '{} confusion matrix'.format(mode),
+                    path / 'confusion_matrix.png')
+    plot_cnf_matrix(cnf_matrix,
+                    FungusDataset.NUMBER_TO_FUNGUS,
+                    'train normalized confusion matrix',
+                    path / 'normalized_confusion_matrix.png',
+                    normalize=True)
+    plot_cnf_matrix(proba_cnf_matrix,
+                    FungusDataset.NUMBER_TO_FUNGUS,
+                    '{} probability confusion matrix'.format(mode),
+                    path / 'probability_confusion_matrix.png')
+
+
+if __name__ == '__main__':
+    logger = get_logger('confusion_matrixes')
+    set_excepthook(logger)
+
+    args = parse_arguments()
+    config = load_config(args.config)
+    set_seed(config.seed)
+    model = 'bow' if args.bow else 'fv'
+    features_path = get_results_path(
+        config.results_path, 'features', args.prefix, 'train')
+    train_results_path = get_results_path(
+        config.results_path, model, args.prefix, 'train')
+    test_results_path = get_results_path(
+        config.results_path, model, args.prefix, 'test')
+    logger.info('Plotting charts for prefix %s with %s model',
+                args.prefix, model)
+
+    pipeline = joblib.load(train_results_path / 'best_model.pkl')
+    feature_matrix = np.load(features_path / 'feature_matrix.npy')
+    y_true = np.load(features_path / 'labels.npy')
 
     y_pred = pipeline.predict(feature_matrix)
-
     cnf_matrix = confusion_matrix(y_true, y_pred)
     probabilities = pipeline.predict_proba(feature_matrix)
     proba_cnf_matrix = probability_confusion_matrix(
         y_true, y_pred, probabilities, FungusDataset.NUMBER_TO_FUNGUS)
 
-    bow_type = 'fv' if not bow else 'bow'
-
-    # Plot charts
-    plot_cnf_matrix(cnf_matrix,
-                    FungusDataset.NUMBER_TO_FUNGUS,
-                    'confusion matrix ({})'.format(mode),
-                    '{}_{}_{}'.format(filename_prefix, bow_type, 'confusion_matrix.png'))
-    plot_accuracy_bars(cnf_matrix,
-                       FungusDataset.NUMBER_TO_FUNGUS,
-                       'accuracy ({})'.format(mode),
-                       '{}_{}_{}'.format(filename_prefix, bow_type, 'accuracy_bars.png'))
-    plot_cnf_matrix(cnf_matrix,
-                    FungusDataset.NUMBER_TO_FUNGUS,
-                    'normalized confusion matrix ({})'.format(mode),
-                    '{}_{}_{}'.format(filename_prefix, bow_type,
-                                      'normalized_confusion_matrix.png'),
-                    normalize=True)
-    plot_cnf_matrix(proba_cnf_matrix,
-                    FungusDataset.NUMBER_TO_FUNGUS,
-                    'probability confusion matrix ({})'.format(mode),
-                    '{}_{}_{}'.format(filename_prefix, bow_type, 'probability_confusion_matrix.png'))
-
-
-if __name__ == '__main__':
-    SEED = 9001
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-    torch.manual_seed(SEED)
-    np.random.seed(SEED)
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        'results_dir', help='absolute path to results directory')
-    parser.add_argument('--prefix', help='input file prefix')
-    parser.add_argument('--bow', default=False,
-                        action='store_true', help='enable bow pipeline')
-    args = parser.parse_args()
-
-    model_filename = '{}{}_{}/best_model.pkl'.format(
-        args.results_dir,
-        'fv' if not args.bow else 'bow',
-        args.prefix,
-    )
-    pipeline = joblib.load(model_filename)
-
-    generate_charts('train', args.results_dir, args.prefix, args.bow)
-    generate_charts('test', args.results_dir, args.prefix, args.bow)
+    train_results_path.mkdir(parents=True, exist_ok=True)
+    test_results_path.mkdir(parents=True, exist_ok=True)
+    plot_all(train_results_path, 'train', cnf_matrix, proba_cnf_matrix)
+    plot_all(test_results_path, 'test', cnf_matrix, proba_cnf_matrix)
+    logger.info('Plotting successfull')

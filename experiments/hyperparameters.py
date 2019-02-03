@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+import os  # isort:skip
+import sys  # isort:skip
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..')))  # isort:skip
+
 import argparse
 import logging
 
@@ -14,12 +19,6 @@ from util.log import get_logger
 from util.log import set_excepthook
 from util.path import get_results_path
 from util.random import set_seed
-
-import os  # isort:skip
-import sys  # isort:skip
-sys.path.insert(0, os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..')))  # isort:skip
-
 
 def parse_arguments():
     """Builds ArgumentParser and uses it to parse command line options."""
@@ -44,8 +43,7 @@ if __name__ == '__main__':
         config.results_path, 'features', args.prefix, 'train')
     train_results_path = get_results_path(
         config.results_path, model, args.prefix, 'train')
-    test_results_path = get_results_path(
-        config.results_path, model, args.prefix, 'test')
+    train_results_path.mkdir(parents=True, exist_ok=True)
     logger.info('Fitting hyperparameters for prefix %s with %s model',
                 args.prefix, model)
 
@@ -53,7 +51,7 @@ if __name__ == '__main__':
     labels = np.load(features_path / 'labels.npy')
 
     pipeline = bow_pipeline if args.bow else fv_pipeline
-    param_grid = bow_param_grid if args.bow else fv_param_grid
+    param_grid = config.bow_param_grid if args.bow else config.fv_param_grid
     pipeline = model_selection.GridSearchCV(pipeline, param_grid, n_jobs=24)
     pipeline.fit(feature_matrix, labels)
     logger.info('Best hyperparameters %s', pipeline.best_params_)

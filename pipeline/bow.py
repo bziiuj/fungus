@@ -23,7 +23,7 @@ class BOWPooling(BaseEstimator, TransformerMixin):
         Args:
             X_features: Images set of size (n, c, w, h).
         """
-
+        X_features = X_features.reshape(-1, X_features.shape[2])
         if len(X_features) < self.samples_number:
             raise AttributeError(
                 'Number of samples must be greater than number of GMM samples')
@@ -31,7 +31,7 @@ class BOWPooling(BaseEstimator, TransformerMixin):
             X_features.shape[0], self.samples_number, replace=False)
         X_features = X_features[indices, :]
 
-        self.kmeans = KMeans(n_clusters=self.clusters_number)
+        self.kmeans = KMeans(n_clusters=self.clusters_number, n_jobs=-1)
         self.kmeans.fit(X_features)
 
         return self

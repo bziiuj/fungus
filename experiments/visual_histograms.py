@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+import os  # isort:skip
+import sys  # isort:skip
+
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..')))  # isort:skip
 
 import argparse
 import logging
@@ -15,13 +20,11 @@ from sklearn import svm
 from dataset import FungusDataset
 from dataset.normalization import denormalize
 from pipeline.fisher_vector_transformer import FisherVectorTransformer
-
-import os  # isort:skip
-import sys  # isort:skip
-
-sys.path.insert(0, os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..')))  # isort:skip
-
+from util.config import load_config
+from util.log import get_logger
+from util.log import set_excepthook
+from util.path import get_results_path
+from util.random import set_seed
 
 plt.switch_backend('agg')
 
@@ -70,31 +73,24 @@ def plot_boxplot(bows, labels, name):
     plt.close()
 
 
-if __name__ == '__main__':
-    log = logging.getLogger('fungus')
-    log.setLevel(logging.DEBUG)
-    fh = logging.FileHandler('tmp/fungus.log')
-    fh.setLevel(logging.DEBUG)
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    fh.setFormatter(formatter)
-    log.addHandler(ch)
-    log.addHandler(fh)
-
-    SEED = 9001
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-    torch.manual_seed(SEED)
-    np.random.seed(SEED)
-
+def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        'results_dir', help='absolute path to results directory')
-    parser.add_argument('--prefix')
-    args = parser.parse_args()
+    parser.add_argument('--prefix', default='', help='input file prefix')
+    parser.add_argument('--bow', default=False,
+                        action='store_true', help='enable bow pipeline')
+    parser.add_argument('--config', default='experiments_config.py',
+                        help='path to python module with shared experiment configuration')
+    return parser.parse_args()
+
+
+if __name__ == '__main__':
+    logger = get_logger('visual_histograms')
+    set_excepthook(logger)
+
+    args = parse_arguments()
+    config = load_config(args.config)
+    set_seed(config.seed)
+    model = 'bow' if args.bow else 'fv'
 
     fv = FisherVectorTransformer(gmm_samples_number=5000)
     svc = svm.SVC(C=10.0, kernel='linear')
