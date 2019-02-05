@@ -91,7 +91,7 @@ def plot_all(path, mode, cnf_matrix, proba_cnf_matrix):
                     path / 'confusion_matrix.png')
     plot_cnf_matrix(cnf_matrix,
                     FungusDataset.NUMBER_TO_FUNGUS,
-                    'train normalized confusion matrix',
+                    '{} normalized confusion matrix'.format(mode),
                     path / 'normalized_confusion_matrix.png',
                     normalize=True)
     plot_cnf_matrix(proba_cnf_matrix,
