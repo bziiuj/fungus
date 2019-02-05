@@ -100,6 +100,21 @@ def plot_all(path, mode, cnf_matrix, proba_cnf_matrix):
                     path / 'probability_confusion_matrix.png')
 
 
+def process(features_path, model_path, results_path, mode):
+    pipeline = joblib.load(model_path / 'best_model.pkl')
+    feature_matrix = np.load(features_path / 'feature_matrix.npy')
+    y_true = np.load(features_path / 'labels.npy')
+
+    y_pred = pipeline.predict(feature_matrix)
+    cnf_matrix = confusion_matrix(y_true, y_pred)
+    probabilities = pipeline.predict_proba(feature_matrix)
+    proba_cnf_matrix = probability_confusion_matrix(
+        y_true, y_pred, probabilities, FungusDataset.NUMBER_TO_FUNGUS)
+
+    results_path.mkdir(parents=True, exist_ok=True)
+    plot_all(results_path, mode, cnf_matrix, proba_cnf_matrix)
+
+
 if __name__ == '__main__':
     logger = get_logger('confusion_matrixes')
     set_excepthook(logger)
@@ -114,21 +129,13 @@ if __name__ == '__main__':
         config.results_path, model, args.prefix, 'train')
     test_results_path = get_results_path(
         config.results_path, model, args.prefix, 'test')
+    train_features_path = get_results_path(
+        config.results_path, 'features', args.prefix, 'train')
+    test_features_path = get_results_path(
+        config.results_path, 'features', args.prefix, 'test')
     logger.info('Plotting charts for prefix %s with %s model',
                 args.prefix, model)
-
-    pipeline = joblib.load(train_results_path / 'best_model.pkl')
-    feature_matrix = np.load(features_path / 'feature_matrix.npy')
-    y_true = np.load(features_path / 'labels.npy')
-
-    y_pred = pipeline.predict(feature_matrix)
-    cnf_matrix = confusion_matrix(y_true, y_pred)
-    probabilities = pipeline.predict_proba(feature_matrix)
-    proba_cnf_matrix = probability_confusion_matrix(
-        y_true, y_pred, probabilities, FungusDataset.NUMBER_TO_FUNGUS)
-
-    train_results_path.mkdir(parents=True, exist_ok=True)
-    test_results_path.mkdir(parents=True, exist_ok=True)
-    plot_all(train_results_path, 'train', cnf_matrix, proba_cnf_matrix)
-    plot_all(test_results_path, 'test', cnf_matrix, proba_cnf_matrix)
+    process(train_features_path, train_results_path,
+            train_results_path, 'train')
+    process(test_features_path, train_results_path, test_results_path, 'test')
     logger.info('Plotting successfull')
