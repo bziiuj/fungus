@@ -103,6 +103,7 @@ def plot_all(path, mode, cnf_matrix, proba_cnf_matrix):
 def process(features_path, model_path, results_path, mode):
     pipeline = joblib.load(model_path / 'best_model.pkl')
     feature_matrix = np.load(features_path / 'feature_matrix.npy')
+    print(feature_matrix.shape)
     y_true = np.load(features_path / 'labels.npy')
 
     y_pred = pipeline.predict(feature_matrix)

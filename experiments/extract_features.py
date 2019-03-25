@@ -88,6 +88,7 @@ if __name__ == '__main__':
     feature_matrix_path = results_path / 'feature_matrix.npy'
     labels_path = results_path / 'labels.npy'
     image_patches_path = results_path / 'image_patches.npy'
+    print(feature_matrix.shape)
     np.save(feature_matrix_path, feature_matrix)
     np.save(labels_path, labels)
     np.save(image_patches_path, image_patches)

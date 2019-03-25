@@ -22,11 +22,14 @@ def extract_features(images, device, extractor=None):
     images -- set of images with shape N, C, W, H
     extractor -- pytorch model to be used as an extractor. If None then
     AlexNet will be used.
+
+    Returns 3D tensor (N, W * H, C).
     """
     if not extractor:
         extractor = models.alexnet(pretrained=True).features.eval().to(device)
     features = extractor(images)
     N, C, W, H = features.size()
+    print(N, C, W, H)
     return features.reshape(N, C, W * H).transpose_(2, 1)
 
 
@@ -48,5 +51,6 @@ def compute_feature_matrix(loader, device, extractor=None):
             y_true = sample['class']
             X_features = extract_features(X, device, extractor)
             feature_matrix = torch.cat((feature_matrix, X_features), dim=0)
+            print(feature_matrix.size())
             labels = torch.cat((labels, y_true), dim=0)
     return image_patches.numpy(), feature_matrix.cpu().numpy(), labels.numpy()
