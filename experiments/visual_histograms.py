@@ -1,10 +1,4 @@
 #!/usr/bin/env python
-import os  # isort:skip
-import sys  # isort:skip
-
-sys.path.insert(0, os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..')))  # isort:skip
-
 import argparse
 import logging
 
@@ -16,6 +10,14 @@ import torch
 from matplotlib import pyplot as plt
 from scipy.spatial.distance import cdist
 from sklearn import svm
+from sklearn.externals import joblib
+
+
+import os  # isort:skip
+import sys  # isort:skip
+
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..')))  # isort:skip
 
 from dataset import FungusDataset
 from dataset.normalization import denormalize
@@ -25,6 +27,7 @@ from util.log import get_logger
 from util.log import set_excepthook
 from util.path import get_results_path
 from util.random import set_seed
+
 
 plt.switch_backend('agg')
 
@@ -38,7 +41,7 @@ def generate_bows(feature_matrix, fv, distances):
     return np.stack(bows)
 
 
-def plot_similarity_mosaic(distances, patches, filename_prefix):
+def plot_similarity_mosaic(distances, patches, filepath):
     for i in range(distances.shape[1]):
         plt.figure(dpi=300)
         dist = distances[:, i]
@@ -55,12 +58,12 @@ def plot_similarity_mosaic(distances, patches, filename_prefix):
             # print('post')
             # print(patch)
             plt.imshow(patch)
-        plt.savefig('{}_similarity_mosaic_{}.png'.format(
-            filename_prefix, str(i)))
+        filename = 'similarity_mosaic_{}.png'.format(str(i))
+        plt.savefig(filepath / filename)
         plt.close()
 
 
-def plot_boxplot(bows, labels, name):
+def plot_boxplot(bows, labels, filepath):
     # flierprops = dict(marker='+', markerfacecolor='red')
     plt.figure(figsize=(10, 10), dpi=300)
     for i in range(10):
@@ -69,7 +72,7 @@ def plot_boxplot(bows, labels, name):
         sns.boxplot(data=i_bows)
         # plt.boxplot(i_bows, flierprops=flierprops)
         plt.title(FungusDataset.NUMBER_TO_FUNGUS[i])
-    plt.savefig(name)
+    plt.savefig(filepath / 'boxplot.png')
     plt.close()
 
 
@@ -93,56 +96,58 @@ if __name__ == '__main__':
     model = 'bow' if args.bow else 'fv'
 
     fv = FisherVectorTransformer(gmm_samples_number=5000)
-    svc = svm.SVC(C=10.0, kernel='linear')
+    # svc = svm.SVC(C=10.0, kernel='linear')
 
     # load train and test data
-    train_filename_prefix = '{}/{}/{}'.format(
-        args.results_dir, args.prefix, 'train')
-    train_image_patches = np.load('{}_{}'.format(
-        train_filename_prefix, 'image_patches.npy'))
-    train_feature_matrix = np.load('{}_{}'.format(
-        train_filename_prefix, 'feature_matrix.npy'))
-    train_labels = np.load('{}_{}'.format(train_filename_prefix, 'labels.npy'))
+    train_features_path = get_results_path(
+        config.results_path, 'features', args.prefix, 'train')
+    train_image_patches = np.load(train_features_path / 'image_patches.npy')
+    train_feature_matrix = np.load(train_features_path / 'feature_matrix.npy')
+    train_labels = np.load(train_features_path / 'labels.npy')
 
-    test_filename_prefix = '{}/{}/{}'.format(
-        args.results_dir, args.prefix, 'test')
-    test_image_patches = np.load('{}_{}'.format(
-        test_filename_prefix, 'image_patches.npy'))
-    test_feature_matrix = np.load('{}_{}'.format(
-        test_filename_prefix, 'feature_matrix.npy'))
-    test_labels = np.load('{}_{}'.format(test_filename_prefix, 'labels.npy'))
+    test_features_path = get_results_path(
+        config.results_path, 'features', args.prefix, 'test')
+    test_image_patches = np.load(test_features_path / 'image_patches.npy')
+    test_feature_matrix = np.load(test_features_path / 'feature_matrix.npy')
+    test_labels = np.load(test_features_path / 'labels.npy')
 
-    # fit gmm with train data
-    fv.fit(train_feature_matrix)
+    # load trained model
+    train_results_path = get_results_path(
+        config.results_path, model, args.prefix, 'train')
+    best_model = joblib.load(train_results_path / 'best_model.pkl')
+    transformer_name = 'bag_of_words' if args.bow else 'fisher_vector'
+    transformer = best_model.best_estimator_.named_steps[transformer_name]
 
     # process train and test data with gmm
-    train_fv_matrix = fv.transform(train_feature_matrix)
-    test_fv_matrix = fv.transform(test_feature_matrix)
+    train_fv_matrix = transformer.transform(train_feature_matrix)
+    test_fv_matrix = transformer.transform(test_feature_matrix)
 
     # compute distances from train and test to gmm clusters
     train_distances = cdist(
-        train_feature_matrix.reshape(-1, 256), fv.gmm_[0].transpose())
+        train_feature_matrix.reshape(-1, 256), transformer.gmm_[0].transpose())
     test_distances = cdist(
-        test_feature_matrix.reshape(-1, 256), fv.gmm_[0].transpose())
+        test_feature_matrix.reshape(-1, 256), transformer.gmm_[0].transpose())
 
     # generate train bow
-    train_bows = generate_bows(train_feature_matrix, fv, train_distances)
-    test_bows = generate_bows(test_feature_matrix, fv, test_distances)
+    train_bows = generate_bows(
+        train_feature_matrix, transformer, train_distances)
+    test_bows = generate_bows(test_feature_matrix, transformer, test_distances)
 
-    # compute accuracy
-    svc.fit(train_fv_matrix, train_labels)
-    log.info('Accuracy training {}'.format(
-        svc.score(train_fv_matrix, train_labels)))
-    log.info('Accuracy test {}'.format(svc.score(test_fv_matrix, test_labels)))
+    # # compute accuracy
+    # svc.fit(train_fv_matrix, train_labels)
+    # log.info('Accuracy training {}'.format(
+    #     svc.score(train_fv_matrix, train_labels)))
+    # log.info('Accuracy test {}'.format(svc.score(test_fv_matrix, test_labels)))
+
+    test_results_path = get_results_path(
+        config.results_path, model, args.prefix, 'test')
 
     # similarity mosaics
     plot_similarity_mosaic(
-        train_distances, train_image_patches, train_filename_prefix)
+        train_distances, train_image_patches, train_results_path)
     plot_similarity_mosaic(
-        test_distances, test_image_patches, test_filename_prefix)
+        test_distances, test_image_patches, test_results_path)
 
     # boxplots
-    plot_boxplot(train_bows, train_labels, '{}_{}'.format(
-        train_filename_prefix, 'boxplot.png'))
-    plot_boxplot(test_bows, test_labels, '{}_{}'.format(
-        test_filename_prefix, 'boxplot.png'))
+    plot_boxplot(train_bows, train_labels, train_results_path)
+    plot_boxplot(test_bows, test_labels, test_results_path)
