@@ -39,6 +39,5 @@ class FisherVectorTransformer(BaseEstimator, TransformerMixin):
     def __fisher_vector(self, x):
         """Compute Fisher vector from feature vector x."""
         means, covars, priors = self.gmm_
-        print(x.shape)
         x = x.transpose()
         return fisher(x, means, covars, priors, improved=True)

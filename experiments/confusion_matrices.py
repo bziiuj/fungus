@@ -1,17 +1,20 @@
 #!/usr/bin/env python
-import os  # isort:skip
-import sys  # isort:skip
-sys.path.insert(0, os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..')))  # isort:skip
-
 import argparse
 import itertools
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import seaborn as sns
 import torch
 from sklearn.externals import joblib
+from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
+
+import os  # isort:skip
+import sys  # isort:skip
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..')))  # isort:skip
 
 from dataset import FungusDataset
 from util.config import load_config
@@ -21,6 +24,7 @@ from util.path import get_results_path
 from util.random import set_seed
 
 plt.switch_backend('agg')
+sns.set()
 
 
 def probability_confusion_matrix(y_true, y_pred, probabilities, classes):
@@ -35,28 +39,21 @@ def probability_confusion_matrix(y_true, y_pred, probabilities, classes):
 
 
 def plot_cnf_matrix(matrix, classes, title, filename, normalize=False):
-    plt.figure()
     if normalize:
         matrix = matrix.astype('float') / matrix.sum(axis=1)[:, np.newaxis]
-    plt.imshow(matrix, interpolation='nearest', cmap=plt.cm.Blues)
-    plt.title(title)
-    # legend
-    plt.colorbar()
-    tick_marks = np.arange(len(classes.keys()))
-    plt.xticks(tick_marks, classes.values(), rotation=45)
-    plt.yticks(tick_marks, classes.values())
-    # numeric values on matrix
-    # fmt = '.2f' if normalize else 'd'
+    df_cm = pd.DataFrame(
+        matrix, index=classes.values(), columns=classes.values()
+    )
+    fig = plt.figure()
     fmt = '.2f'
-    tresh = matrix.max() / 2
-    for i, j in itertools.product(range(matrix.shape[0]), range(matrix.shape[1])):
-        plt.text(j, i, format(matrix[i, j], fmt),
-                 horizontalalignment='center',
-                 color='white' if matrix[i, j] > tresh else 'black')
-
-    plt.tight_layout()
-    plt.ylabel('True')
-    plt.xlabel('Predicted')
+    #fmt = '.2f' if normalize else 'd'
+    heatmap = sns.heatmap(df_cm, annot=True, fmt=fmt)
+    heatmap.yaxis.set_ticklabels(
+        heatmap.yaxis.get_ticklabels(), rotation=0, ha='right')
+    heatmap.xaxis.set_ticklabels(
+        heatmap.xaxis.get_ticklabels(), rotation=45, ha='right')
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
     plt.savefig(filename)
 
 
@@ -103,7 +100,6 @@ def plot_all(path, mode, cnf_matrix, proba_cnf_matrix):
 def process(features_path, model_path, results_path, mode):
     pipeline = joblib.load(model_path / 'best_model.pkl')
     feature_matrix = np.load(features_path / 'feature_matrix.npy')
-    print(feature_matrix.shape)
     y_true = np.load(features_path / 'labels.npy')
 
     y_pred = pipeline.predict(feature_matrix)
@@ -114,6 +110,7 @@ def process(features_path, model_path, results_path, mode):
 
     results_path.mkdir(parents=True, exist_ok=True)
     plot_all(results_path, mode, cnf_matrix, proba_cnf_matrix)
+    print(accuracy_score(y_true, y_pred))
 
 
 if __name__ == '__main__':

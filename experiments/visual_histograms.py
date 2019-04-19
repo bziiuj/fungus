@@ -7,11 +7,11 @@ import numpy as np
 import scipy.io as sio
 import seaborn as sns
 import torch
+from matplotlib import gridspec
 from matplotlib import pyplot as plt
 from scipy.spatial.distance import cdist
 from sklearn import svm
 from sklearn.externals import joblib
-
 
 import os  # isort:skip
 import sys  # isort:skip
@@ -28,8 +28,8 @@ from util.log import set_excepthook
 from util.path import get_results_path
 from util.random import set_seed
 
-
 plt.switch_backend('agg')
+sns.set()
 
 
 def generate_bows(feature_matrix, fv, distances):
@@ -42,7 +42,9 @@ def generate_bows(feature_matrix, fv, distances):
 
 
 def plot_similarity_mosaic(distances, patches, filepath):
+    combined_patches = []
     for i in range(distances.shape[1]):
+        combined_patches.append([])
         plt.figure(dpi=300)
         dist = distances[:, i]
         order = np.argpartition(dist, 5 * 5, axis=0)
@@ -55,22 +57,37 @@ def plot_similarity_mosaic(distances, patches, filepath):
             # print('pre')
             # print(patch)
             patch = denormalize(patch)
+            combined_patches[-1].append(patch)
             # print('post')
             # print(patch)
             plt.imshow(patch)
         filename = 'similarity_mosaic_{}.png'.format(str(i))
         plt.savefig(filepath / filename)
         plt.close()
+    plt.figure(dpi=300, figsize=(10, 10))
+    gs = gridspec.GridSpec(10, 10)
+    gs.update(wspace=0.25, hspace=0.25)
+    j = 0
+    for patches in combined_patches:
+        for i in range(10):
+            # plt.subplot(10, 10, j * 10 + i + 1)
+            plt.subplot(gs[j * 10 + i])
+            plt.axis('off')
+            plt.imshow(patches[i])
+        j += 1
+    plt.savefig(filepath / 'similarity_mosaic.png')
+    plt.close()
 
 
 def plot_boxplot(bows, labels, filepath):
-    # flierprops = dict(marker='+', markerfacecolor='red')
-    plt.figure(figsize=(10, 10), dpi=300)
+    f, axes = plt.subplots(10, 1, figsize=(10, 50), sharex=True)
     for i in range(10):
         i_bows = bows[labels == i, :]
-        plt.subplot(2, 5, i + 1)
-        sns.boxplot(data=i_bows)
-        # plt.boxplot(i_bows, flierprops=flierprops)
+        # plt.subplot(2, 5, i + 1)
+        # ax = axes[i // 1, i % 1]
+        ax = axes[i]
+        sns.boxplot(data=i_bows, orient='h', ax=ax)
+        # ax.set(ylim=(0, 200))
         plt.title(FungusDataset.NUMBER_TO_FUNGUS[i])
     plt.savefig(filepath / 'boxplot.png')
     plt.close()
