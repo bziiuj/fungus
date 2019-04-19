@@ -9,9 +9,12 @@ import seaborn as sns
 import torch
 from matplotlib import gridspec
 from matplotlib import pyplot as plt
+from matplotlib import gridspec
 from scipy.spatial.distance import cdist
 from sklearn import svm
 from sklearn.externals import joblib
+
+
 
 import os  # isort:skip
 import sys  # isort:skip
@@ -42,41 +45,49 @@ def generate_bows(feature_matrix, fv, distances):
 
 
 def plot_similarity_mosaic(distances, patches, filepath):
-    combined_patches = []
+    p = []
+    indices = [
+        [0, 3, 6, 10, 11, 14, 16, 20, 22, 23],
+        [0, 2, 3, 6, 7, 9, 10, 17, 20, 21],
+        [0, 5, 6, 7, 8, 10, 15, 17, 19, 23],
+        [0, 1, 2, 5, 7, 10, 15, 22, 23, 24],
+        [0, 4, 5, 9, 11, 15, 20, 22, 23, 24],
+        [0, 2, 5, 6, 8, 10, 14, 16, 17, 19],
+        [0, 6, 8, 9, 13, 15, 20, 21, 22, 23],
+        [0, 1, 6, 7, 10, 17, 18, 19, 20, 21],
+        [0, 5, 6, 8, 14, 15, 17, 18, 19, 20],
+        [0, 2, 3, 5, 6, 10, 11, 16, 17, 24]
+    ]
     for i in range(distances.shape[1]):
-        combined_patches.append([])
+        p.append([])
         plt.figure(dpi=300)
         dist = distances[:, i]
         order = np.argpartition(dist, 5 * 5, axis=0)
         closest_patches = patches[order[:25] //
                                   train_feature_matrix.shape[1], :, :, :]
+        p[-1].extend(closest_patches[indices[i]])
         for j, patch in enumerate(closest_patches):
             plt.subplot(5, 5, j + 1)
             plt.axis('off')
             patch = np.moveaxis(patch, 0, -1)
-            # print('pre')
-            # print(patch)
             patch = denormalize(patch)
-            combined_patches[-1].append(patch)
-            # print('post')
-            # print(patch)
             plt.imshow(patch)
         filename = 'similarity_mosaic_{}.png'.format(str(i))
         plt.savefig(filepath / filename)
         plt.close()
-    plt.figure(dpi=300, figsize=(10, 10))
+    plt.figure(figsize=(10, 10))
     gs = gridspec.GridSpec(10, 10)
-    gs.update(wspace=0.25, hspace=0.25)
-    j = 0
-    for patches in combined_patches:
-        for i in range(10):
-            # plt.subplot(10, 10, j * 10 + i + 1)
-            plt.subplot(gs[j * 10 + i])
+    gs.update(wspace=0.1, hspace=0.1)
+    for i in range(10):
+        for j in range(len(p[i])):
+            plt.subplot(gs[i * 10 + j])
             plt.axis('off')
-            plt.imshow(patches[i])
-        j += 1
+            t = np.moveaxis(p[i][j], 0, -1)
+            t = denormalize(t)
+            plt.imshow(t)
     plt.savefig(filepath / 'similarity_mosaic.png')
     plt.close()
+
 
 
 def plot_boxplot(bows, labels, filepath):
