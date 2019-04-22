@@ -26,6 +26,7 @@ fv_acc = [
     0.7903989181879648]
 
 bow_acc = [
+    0.4685598377281947,
     0.6044624746450304,
     0.6450304259634888,
     0.7072346179851251,
@@ -49,7 +50,7 @@ bow_acc = [
 clusters_num = list(range(5, 101, 5))
 
 ax = sns.lineplot(x=clusters_num, y=fv_acc)
-ax.set(ylim=(0.7, 1),
+ax.set(ylim=(0.4, 1),
        xlim=(5, 100),
        xticks=list(range(5, 101, 10)),
        xlabel='Clusters number',

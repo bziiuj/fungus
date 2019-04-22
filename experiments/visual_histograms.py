@@ -91,15 +91,16 @@ def plot_similarity_mosaic(distances, patches, filepath):
 
 
 def plot_boxplot(bows, labels, filepath):
-    f, axes = plt.subplots(10, 1, figsize=(10, 50), sharex=True)
+    f, axes = plt.subplots(5, 2, figsize=(25, 40), sharex=True)
     for i in range(10):
         i_bows = bows[labels == i, :]
         # plt.subplot(2, 5, i + 1)
-        # ax = axes[i // 1, i % 1]
-        ax = axes[i]
+        ax = axes[i // 2, i % 2]
+        # ax = axes[i]
         sns.boxplot(data=i_bows, orient='h', ax=ax)
         # ax.set(ylim=(0, 200))
         plt.title(FungusDataset.NUMBER_TO_FUNGUS[i])
+    plt.tight_layout()
     plt.savefig(filepath / 'boxplot.png')
     plt.close()
 
@@ -171,11 +172,11 @@ if __name__ == '__main__':
         config.results_path, model, args.prefix, 'test')
 
     # similarity mosaics
-    plot_similarity_mosaic(
-        train_distances, train_image_patches, train_results_path)
-    plot_similarity_mosaic(
-        test_distances, test_image_patches, test_results_path)
-
+    # plot_similarity_mosaic(
+    #     train_distances, train_image_patches, train_results_path)
+    # plot_similarity_mosaic(
+    #     test_distances, test_image_patches, test_results_path)
+    #
     # boxplots
     plot_boxplot(train_bows, train_labels, train_results_path)
     plot_boxplot(test_bows, test_labels, test_results_path)

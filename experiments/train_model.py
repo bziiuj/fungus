@@ -33,7 +33,7 @@ def parse_arguments():
 
 
 if __name__ == '__main__':
-    logger = get_logger('predict_classification')
+    logger = get_logger('train_model')
     set_excepthook(logger)
 
     args = parse_arguments()
