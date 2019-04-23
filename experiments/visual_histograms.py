@@ -14,8 +14,6 @@ from scipy.spatial.distance import cdist
 from sklearn import svm
 from sklearn.externals import joblib
 
-
-
 import os  # isort:skip
 import sys  # isort:skip
 
@@ -33,15 +31,6 @@ from util.random import set_seed
 
 plt.switch_backend('agg')
 sns.set()
-
-
-def generate_bows(feature_matrix, fv, distances):
-    bows = []
-    for d in range(feature_matrix.shape[0]):
-        dist_ = cdist(feature_matrix[d, :], fv.gmm_[0].transpose())
-        bows.append(np.histogram(dist_.argmin(axis=1),
-                                 bins=np.arange(distances.shape[1] + 1))[0])
-    return np.stack(bows)
 
 
 def plot_similarity_mosaic(distances, patches, filepath):
@@ -92,13 +81,10 @@ def plot_similarity_mosaic(distances, patches, filepath):
 
 def plot_boxplot(bows, labels, filepath):
     f, axes = plt.subplots(5, 2, figsize=(25, 40), sharex=True)
-    for i in range(10):
+    for i in range(len(FungusDataset.NUMBER_TO_FUNGUS.values())):
         i_bows = bows[labels == i, :]
-        # plt.subplot(2, 5, i + 1)
         ax = axes[i // 2, i % 2]
-        # ax = axes[i]
         sns.boxplot(data=i_bows, orient='h', ax=ax)
-        # ax.set(ylim=(0, 200))
         plt.title(FungusDataset.NUMBER_TO_FUNGUS[i])
     plt.tight_layout()
     plt.savefig(filepath / 'boxplot.png')
@@ -115,6 +101,16 @@ def parse_arguments():
     return parser.parse_args()
 
 
+def load_all(config, args, mode):
+    features_path = get_results_path(
+        config.results_path, 'features', args.prefix, mode)
+    image_patches = np.load(features_path / 'image_patches.npy')
+    feature_matrix = np.load(features_path / 'feature_matrix.npy')
+    labels = np.load(features_path / 'labels.npy')
+    return image_patches, feature_matrix, labels
+
+
+
 if __name__ == '__main__':
     logger = get_logger('visual_histograms')
     set_excepthook(logger)
@@ -122,61 +118,27 @@ if __name__ == '__main__':
     args = parse_arguments()
     config = load_config(args.config)
     set_seed(config.seed)
-    model = 'bow' if args.bow else 'fv'
+    model_type = 'bow' if args.bow else 'fv'
+    CLUSTERS_NUM = 10
 
-    fv = FisherVectorTransformer(gmm_samples_number=5000)
-    # svc = svm.SVC(C=10.0, kernel='linear')
-
-    # load train and test data
-    train_features_path = get_results_path(
-        config.results_path, 'features', args.prefix, 'train')
-    train_image_patches = np.load(train_features_path / 'image_patches.npy')
-    train_feature_matrix = np.load(train_features_path / 'feature_matrix.npy')
-    train_labels = np.load(train_features_path / 'labels.npy')
-
-    test_features_path = get_results_path(
-        config.results_path, 'features', args.prefix, 'test')
-    test_image_patches = np.load(test_features_path / 'image_patches.npy')
-    test_feature_matrix = np.load(test_features_path / 'feature_matrix.npy')
-    test_labels = np.load(test_features_path / 'labels.npy')
-
-    # load trained model
-    train_results_path = get_results_path(
-        config.results_path, model, args.prefix, 'train')
-    best_model = joblib.load(train_results_path / 'best_model.pkl')
+    # train_image_patches, train_feature_matrix, train_labels = load_all(config, args, 'train')
+    test_image_patches, test_feature_matrix, test_labels = load_all(config, args, 'test')
+    model_path = get_results_path(config.results_path, model_type, args.prefix, str(CLUSTERS_NUM))
+    model = joblib.load(model_path / 'best_model.pkl').best_estimator_
     transformer_name = 'bag_of_words' if args.bow else 'fisher_vector'
-    transformer = best_model.best_estimator_.named_steps[transformer_name]
+    transformer = model.named_steps[transformer_name]
 
-    # process train and test data with gmm
-    train_fv_matrix = transformer.transform(train_feature_matrix)
-    test_fv_matrix = transformer.transform(test_feature_matrix)
+    # train_points = transformer.transform(train_feature_matrix)
+    test_points = transformer.transform(test_feature_matrix)
 
     # compute distances from train and test to gmm clusters
-    train_distances = cdist(
-        train_feature_matrix.reshape(-1, 256), transformer.gmm_[0].transpose())
-    test_distances = cdist(
-        test_feature_matrix.reshape(-1, 256), transformer.gmm_[0].transpose())
+    # train_distances = cdist(
+        # train_feature_matrix.reshape(-1, 256), transformer.gmm_[0].transpose())
+    # test_distances = cdist(
+    #     test_feature_matrix.reshape(-1, 256), transformer.gmm_[0].transpose())
 
-    # generate train bow
-    train_bows = generate_bows(
-        train_feature_matrix, transformer, train_distances)
-    test_bows = generate_bows(test_feature_matrix, transformer, test_distances)
 
-    # # compute accuracy
-    # svc.fit(train_fv_matrix, train_labels)
-    # log.info('Accuracy training {}'.format(
-    #     svc.score(train_fv_matrix, train_labels)))
-    # log.info('Accuracy test {}'.format(svc.score(test_fv_matrix, test_labels)))
+    # plot_similarity_mosaic(test_distances, test_image_patches, model_path)
 
-    test_results_path = get_results_path(
-        config.results_path, model, args.prefix, 'test')
-
-    # similarity mosaics
-    # plot_similarity_mosaic(
-    #     train_distances, train_image_patches, train_results_path)
-    # plot_similarity_mosaic(
-    #     test_distances, test_image_patches, test_results_path)
-    #
-    # boxplots
-    plot_boxplot(train_bows, train_labels, train_results_path)
-    plot_boxplot(test_bows, test_labels, test_results_path)
+    test_bows = transformer.transform(test_feature_matrix)
+    plot_boxplot(test_bows, test_labels, model_path)
