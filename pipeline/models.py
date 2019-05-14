@@ -1,7 +1,7 @@
 from sklearn import svm
 from sklearn.pipeline import Pipeline
 
-from pipeline.bow import BOWPooling
+from pipeline.bow import BagOfWordsTransformer
 from pipeline.fisher_vector_transformer import FisherVectorTransformer
 
 from torchvision import models
@@ -28,7 +28,7 @@ fv_pipeline = Pipeline(
 
 bow_pipeline = Pipeline(
     steps=[
-        ('bag_of_words', BOWPooling()),
+        ('bag_of_words', BagOfWordsTransformer()),
         ('svc', svm.SVC(probability=True)),
     ]
 )
