@@ -8,9 +8,15 @@ dataset.
 import argparse
 import copy
 import functools
+import os  # isort:skip
+import sys  # isort:skip
+sys.path.insert(0, os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..')))  # isort:skip
+sys.path.append('/mnt/fungus/')
 
 import numpy as np
 import torch
+import tqdm
 from sklearn.externals import joblib
 from tensorboardX import SummaryWriter
 from torch import nn
@@ -24,37 +30,36 @@ from dataset import FungusDataset
 from pipeline.models import nn_models
 from util.rotation_by90 import RotationBy90
 
-import os  # isort:skip
-import sys  # isort:skip
-sys.path.insert(0, os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..')))  # isort:skip
-
 
 @functools.lru_cache(maxsize=8)
 def read_means_and_standard_deviations(means_path, stds_path):
     return np.load(means_path), np.load(stds_path)
 
 
-def initialize_data_loader(args):
+def initialize_data_loader(args, shuffle):
     means, stds = read_means_and_standard_deviations(
         'tmp/means.npy', 'tmp/stds.npy')
-    transform = transforms.Compose([
-        RotationBy90(),
+    t = [
         transforms.ToTensor(),
         transforms.Normalize(means, stds),
-    ])
+    ]
+
+    if args.model == 'inceptionv3':
+        t.insert(0, transforms.Resize((299, 299)))
+    transform = transforms.Compose(t)
+
     train_dataset = FungusDataset(
         transform=transform,
         pngs_dir=args.pngs_path,
         masks_dir=args.masks_path,
         random_crop_size=args.size,
-        number_of_bg_slices_per_image=16,
-        number_of_fg_slices_per_image=4,
+        number_of_bg_slices_per_image=4,
+        number_of_fg_slices_per_image=16,
         train=True)
     train_loader = data.DataLoader(
         train_dataset,
         batch_size=128,
-        shuffle=True,
+        shuffle=shuffle,
         num_workers=0,
         pin_memory=True,
         worker_init_fn=lambda x: np.random.seed(torch.initial_seed()))
@@ -64,17 +69,17 @@ def initialize_data_loader(args):
         pngs_dir=args.pngs_path,
         masks_dir=args.masks_path,
         random_crop_size=args.size,
-        number_of_bg_slices_per_image=16,
-        number_of_fg_slices_per_image=4,
+        number_of_bg_slices_per_image=2,
+        number_of_fg_slices_per_image=8,
         train=False)
     test_loader = data.DataLoader(
         test_dataset,
         batch_size=128,
-        shuffle=True,
+        shuffle=shuffle,
         num_workers=0,
         pin_memory=True,
         worker_init_fn=lambda x: np.random.seed(torch.initial_seed()))
-    
+
     return train_loader, test_loader
 
 
@@ -87,7 +92,7 @@ def calculate_inception_loss(model, inputs, labels, criterion):
 
 def iterate_through_network(criterion, inputs, is_inception, labels, model):
     if is_inception:
-        outputs, loss = calculate_inception_loss(model, inputs, labels, criterion)
+        loss, outputs = calculate_inception_loss(model, inputs, labels, criterion)
     else:
         outputs = model(inputs)
         loss = criterion(outputs, labels)
@@ -111,17 +116,22 @@ def main():
     parser.add_argument('--model', default='alexnet', help='nn model')
     parser.add_argument('--pngs_path', help='absolute path to directory with pngs')
     parser.add_argument('--masks_path', help='absolute path to directory with masks')
-    parser.add_argument('--size', default=125, type=int, help='random crop radius')
+    parser.add_argument('--size', default=122, type=int, help='random crop radius')
     parser.add_argument('--epoch_no', default=50, type=int, help='no of epochs')
     args = parser.parse_args()
-    filename_prefix = '{}/{}/{}'.format(args.results_dir, args.prefix, 'test' if args.test else 'train')
-    sm = SummaryWriter(log_dir=os.path.join('/tensorboard/', 'args.model'))
+    filename_prefix = '{}/{}/{}'.format(args.results_dir, args.prefix, 'train')
+    sm = SummaryWriter(log_dir=os.path.join('/mnt/tensorboard/', args.model))
 
-    dl_train, dl_test = initialize_data_loader(args)
+    if args.test:
+        shuffle = True
+    else:
+        shuffle = False
+
+    dl_train, dl_test = initialize_data_loader(args, shuffle)
 
     model, is_inception = nn_models[args.model]
-    optim = Adam(model.parameters(), lr=0.1)
-    lr = ReduceLROnPlateau(optim, mode='min', factor=0.5, patience=5,
+    optim = Adam(model.parameters(), lr=0.01)
+    lr = ReduceLROnPlateau(optim, mode='min', factor=0.5, patience=2,
                            verbose=False, threshold=0.0001, threshold_mode='rel',
                            cooldown=0, min_lr=0, eps=1e-04)
     criterion = nn.CrossEntropyLoss()
@@ -130,7 +140,31 @@ def main():
         model = model.cuda()
 
     if args.test:
-        pass
+        model_path = '{}{}_{}_best_model.pkl'.format(args.results_dir, filename_prefix.split('/')[-1], args.model)
+        pred_label_path = '{}{}_{}_pred_label.pkl'.format(args.results_dir, filename_prefix.split('/')[-1], args.model)
+        model.load_state_dict(joblib.load(model_path))
+        model.eval()
+
+        epoch_val_loss = 0.0
+        epoch_val_acc = 0.0
+        pred_label = []
+        for _, d in tqdm.tqdm(enumerate(dl_test)):
+            inputs = d[0]
+            labels = d[1]
+            if torch.cuda.is_available():
+                inputs = inputs.cuda()
+                labels = labels.cuda()
+
+            with torch.set_grad_enabled(False):
+
+                loss, outputs, preds = iterate_through_network(criterion, inputs, False, labels, model)
+
+            # statistics
+            epoch_val_loss += loss.item() * inputs.size(0)
+            epoch_val_acc += torch.sum(preds == labels.data) / len(dl_test)
+            pred_label.append([preds.detach().cpu().numpy(), labels.data.detach().cpu().numpy(), d[2]])
+        np.savez_compressed(pred_label_path, pred_label=pred_label)
+        print('{} Loss: {:.4f} Acc: {:.4f}'.format('val', epoch_val_loss, epoch_val_acc))
     else:
         best_model_wts = copy.deepcopy(model.state_dict())
         best_acc = 0.0
@@ -143,38 +177,42 @@ def main():
             running_val_corrects = 0
 
             # Iterate over data.
-            for inputs, labels in dl_train:
+            for _, d in tqdm.tqdm(enumerate(dl_train)):
+                inputs = d[0]
+                labels = d[1]
                 if torch.cuda.is_available():
                     inputs = inputs.cuda()
                     labels = labels.cuda()
 
-                    with torch.set_grad_enabled(True):
+                with torch.set_grad_enabled(True):
 
-                        loss, outputs, preds = iterate_through_network(criterion, inputs, is_inception, labels, model)
-                        loss.backward()
-                        optim.step()
+                    loss, outputs, preds = iterate_through_network(criterion, inputs, is_inception, labels, model)
+                    loss.backward()
+                    optim.step()
 
-                    # statistics
-                    running_loss += loss.item() * inputs.size(0)
-                    running_corrects += torch.sum(preds == labels.data)
+                # statistics
+                running_loss += loss.item() * inputs.size(0)
+                running_corrects += torch.sum(preds == labels.data)
 
             epoch_loss = running_loss / len(dl_train.dataset)
             epoch_acc = running_corrects.double() / len(dl_train.dataset)
 
             print('{} Loss: {:.4f} Acc: {:.4f}'.format('train', epoch_loss, epoch_acc))
 
-            for inputs, labels in dl_test:
+            for _, d in tqdm.tqdm(enumerate(dl_test)):
+                inputs = d[0]
+                labels = d[1]
                 if torch.cuda.is_available():
                     inputs = inputs.cuda()
                     labels = labels.cuda()
 
-                    with torch.set_grad_enabled(False):
+                with torch.set_grad_enabled(False):
 
-                        loss, outputs, preds = iterate_through_network(criterion, inputs, is_inception, labels, model)
+                    loss, outputs, preds = iterate_through_network(criterion, inputs, is_inception, labels, model)
 
-                    # statistics
-                    running_val_loss += loss.item() * inputs.size(0)
-                    running_val_corrects += torch.sum(preds == labels.data)
+                # statistics
+                running_val_loss += loss.item() * inputs.size(0)
+                running_val_corrects += torch.sum(preds == labels.data)
 
             epoch_val_loss = running_val_loss / len(dl_test.dataset)
             epoch_val_acc = running_val_corrects.double() / len(dl_test.dataset)
@@ -185,11 +223,13 @@ def main():
             if epoch_val_acc > best_acc:
                 best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
+                joblib.dump(best_model_wts, '{}/{}_{}_best_model.pkl'.format(
+                    args.results_dir, filename_prefix.split('/')[-1], args.model
+                ))
             sm.add_scalar('loss_train', epoch_loss, epoch_no)
             sm.add_scalar('acc_train', epoch_acc, epoch_no)
             sm.add_scalar('loss_test', epoch_val_loss, epoch_no)
             sm.add_scalar('acc_test', epoch_val_acc, epoch_no)
-        joblib.dump(best_model_wts, '{}/{}_{}_best_model.pkl'.format(args.results_dir, filename_prefix, args.model))
 
 
 if __name__ == '__main__':

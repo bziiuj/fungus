@@ -1,11 +1,9 @@
-import os
 import warnings
+from PIL import Image
 from enum import IntEnum
 
 import numpy as np
 from skimage import io
-from skimage import transform
-from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
 from dataset.img_files import test_paths
@@ -89,14 +87,14 @@ class FungusDataset(Dataset):
         path = self.paths[image_idx]
         image_class = path.split('/')[-1][:2]
         path = os.path.join(self.pngs_dir, path)
-        return io.imread(path), image_class
+        return Image.open(path), image_class, path
 
     def _is_foreground_patch(self, sequence_idx):
         return (sequence_idx % (self.bg_per_img + self.fg_per_img)) > self.bg_per_img
 
     def __getitem__(self, sequence_idx):
         image_idx = sequence_idx // (self.bg_per_img + self.fg_per_img)
-        image, image_class = self._read_image_and_class(image_idx)
+        image, image_class, image_path = self._read_image_and_class(image_idx)
         mask = self._read_mask(image_idx)
 
         # set appropriate offsets in order to choose only full sized patches
@@ -130,12 +128,10 @@ class FungusDataset(Dataset):
         # get a random patch
         center = np.random.uniform(high=where.shape[0])
         y, x = where[int(center)]
-        image = image[y - self.random_crop_size:y + self.random_crop_size,
-                      x - self.random_crop_size:x + self.random_crop_size,
-                      :]
+        tuple_to_crop = (
+            x - self.random_crop_size, y - self.random_crop_size,
+            x + self.random_crop_size, y + self.random_crop_size,)
+        image = image.crop(tuple_to_crop)
         if self.transform:
             image = self.transform(image)
-        return {
-            'image': image,
-            'class': self.FUNGUS_TO_NUMBER[image_class],
-        }
+        return image, self.FUNGUS_TO_NUMBER[image_class], image_path.split('/')[-1]

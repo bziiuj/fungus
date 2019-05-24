@@ -19,6 +19,39 @@ def init_alexnet():
     return m
 
 
+def init_resnet18():
+    m = models.resnet18(pretrained=True, progress=True)
+    for param in m.parameters():
+        param.requires_grad = False
+    m.fc = nn.Linear(512, num_classes)
+    return m
+
+
+def init_resnet50():
+    m = models.resnet50(pretrained=True, progress=True)
+    for param in m.parameters():
+        param.requires_grad = False
+    m.fc = nn.Linear(2048, num_classes)
+    return m
+
+
+def init_densenet():
+    m = models.densenet169(pretrained=True, progress=True)
+    for param in m.parameters():
+        param.requires_grad = False
+    m.classifier = nn.Linear(1664, num_classes)
+    return m
+
+
+def init_inceptionv3():
+    m = models.inception_v3(pretrained=True, progress=True)
+    for param in m.parameters():
+        param.requires_grad = False
+    m.AuxLogits.fc = nn.Linear(768, num_classes)
+    m.fc = nn.Linear(2048, num_classes)
+    return m
+
+
 fv_pipeline = Pipeline(
     steps=[
         ('fisher_vector', FisherVectorTransformer()),
@@ -35,4 +68,8 @@ bow_pipeline = Pipeline(
 
 nn_models = {
     'alexnet': (init_alexnet(), False),
+    'resnet18': (init_resnet18(), False),
+    'resnet50': (init_resnet50(), False),
+    'densenet': (init_densenet(), False),
+    'inceptionv3': (init_inceptionv3(), True),
 }
