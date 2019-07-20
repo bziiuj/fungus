@@ -18,13 +18,13 @@ python dataset/normalization.py PATH_TO_IMAGES
 
 Results will be saved in `results/{means.npy,stds.npy}`.
 
-Then issue
+Then tou can run experiments with training and saving validation results to directory `../results` with fine-tuned models. 
+Available models are: `alexnet`, `densenet`, `inceptionv3`, `resnet18` and `resnet50`.
 
 ```
-python experiments/extract_features.py PATH_TO_IMAGES PATH_TO_MASKS --prefix PREFIX --size PATCH_SIZE
-python experiments/extract_features.py PATH_TO_IMAGES PATH_TO_MASKS --prefix PREFIX --size PATCH_SIZE --test
-python experiments/hyperparameters.py --prefix PREFIX
-python experiments/confusion_matrices.py --prefix PREFIX
+python experiments/neural_networks.py --prefix PREFIX
 ```
 
 Parameters meaning can be checked in each script's documentation.
+
+To gather the results use notebook `experiments/aggregate_info.ipynb`
