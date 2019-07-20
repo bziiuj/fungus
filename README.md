@@ -28,3 +28,7 @@ python experiments/confusion_matrices.py --prefix PREFIX
 ```
 
 Parameters meaning can be checked in each script's documentation.
+
+To run the experiments with neural networks, use branch `feature/neural_networks`.
+
+To obtain the analysis of SVM classifier use notebook `SVM analysis.ipynb`.
