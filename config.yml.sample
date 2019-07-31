@@ -1,4 +1,0 @@
-# Path to images without trailing slash
-data_path: ''
-# Logging level, as in logging package, uppercase
-logging_level: ''

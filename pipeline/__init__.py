@@ -1,0 +1,3 @@
+from pipeline.fisher_vector_transformer import FisherVectorTransformer
+from pipeline.models import fv_pipeline
+from pipeline.models import bow_pipeline
