@@ -1,5 +1,9 @@
 # fungus
 
+## Database
+
+Database can be acquired via: https://drive.google.com/file/d/1-CjXE-HO3xz36x_XNJVDTRV89xDnjLlu/view?usp=sharing 
+
 ## Conda environment
 
 Conda environment can be set up by issuing:
