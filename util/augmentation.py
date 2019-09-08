@@ -1,7 +1,11 @@
 import random
 
+import numpy as np
 import torch
 import torchvision.transforms.functional as TF
+from skimage.transform import AffineTransform
+from skimage.transform import rotate
+from skimage.transform import warp
 from torchvision.transforms import Compose
 from torchvision.transforms import Lambda
 from torchvision.transforms import Normalize
@@ -13,6 +17,50 @@ from torchvision.transforms import ToTensor
 from torchvision.transforms import ToPILImage
 
 from dataset.normalization import read_means_and_standard_deviations
+
+
+class NumpyRotation:
+
+    def __init__(self, angles=[0, 90, 180, 270]):
+        self.angles = angles
+
+    def __call__(self, img):
+        angle = random.choice(self.angles)
+        return rotate(img, angle)
+
+
+class NumpyVerticalFlip:
+    def __call__(self, img):
+        if np.random.uniform() > 0.5:
+            img = np.fliplr(img)
+        return img
+
+
+class NumpyHorizontalFlip:
+    def __call__(self, img):
+        if np.random.uniform() > 0.5:
+            img = np.flipud(img)
+        return img
+
+
+class NumpyAffineTransform:
+    def __init__(self, scale, shear):
+        self.scale = scale
+        self.shear = shear
+
+    def __call__(self, img):
+        scale = np.random.uniform(low=self.scale[0], high=self.scale[1])
+        shear = np.random.uniform(low=self.shear[0], high=self.shear[1])
+        t = AffineTransform(scale=(scale, scale), shear=shear)
+        if np.random.uniform() > 0.5:
+            img = warp(img, t)
+        return img
+
+
+class NumpyToTensor:
+    def __call__(self, img):
+        img = torch.Tensor(np.ascontiguousarray(img.transpose((2, 0, 1)))).float()
+        return img
 
 
 class RotationBy90(object):
@@ -54,6 +102,22 @@ def get_augmentation_on_tensor_data(noise_sigma=0.1):
             RandomAffine(degrees=(0, 0), scale=(0.8, 1.2), shear=15),
             RandomPerspective(0.25),  # Affine + Perspective = Elastic Transformation
             ToTensor(),
+            Normalize(means, stds),
+            Lambda(lambda x: x + torch.randn(x.size()) * noise_sigma),
+        ]
+    )
+
+
+def get_augmentation_on_numpy_data(noise_sigma=0.1):
+    means, stds = read_means_and_standard_deviations('tmp/means.npy', 'tmp/stds.npy')
+
+    return Compose(
+        [
+            NumpyRotation(),
+            NumpyVerticalFlip(),
+            NumpyHorizontalFlip(),
+            NumpyAffineTransform(scale=(0.8, 1.2), shear=(-15, 15)),
+            NumpyToTensor(),
             Normalize(means, stds),
             Lambda(lambda x: x + torch.randn(x.size()) * noise_sigma),
         ]
