@@ -58,13 +58,14 @@ class NumpyAffineTransform:
         shear = np.random.uniform(low=self.shear[0], high=self.shear[1])
         t = AffineTransform(scale=(scale, scale), shear=shear)
         if np.random.uniform() > 0.5:
-            img = warp(img, t)
-            mask = warp(mask, t)
+            img = warp(img, t, mode='reflect')
+            mask = warp(mask, t, mode='reflect')
         return img, mask
 
 
 class NumpyToTensor:
     def __call__(self, img):
+        img = img.copy()
         img = torch.Tensor(np.ascontiguousarray(img.transpose((2, 0, 1)))).float()
         return img
 
@@ -120,7 +121,7 @@ def get_augmentation_on_numpy_data_img_mask():
             NumpyRotation(),
             NumpyVerticalFlip(),
             NumpyHorizontalFlip(),
-            # NumpyAffineTransform(scale=(0.8, 1.2), shear=(-5, 5)),
+            NumpyAffineTransform(scale=(0.8, 1.2), shear=(np.deg2rad(-15), np.deg2rad(15))),
         ]
     )
 

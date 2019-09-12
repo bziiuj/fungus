@@ -108,7 +108,6 @@ class FungusDataset(Dataset):
         if self.use_augmentation:
             image, mask = self.transform_img_mask((image, mask))
             mask = np.around(mask * 255).astype(np.uint8)
-
         # set appropriate offsets in order to choose only full sized patches
         mask[:self.random_crop_size, :] = ImageSegment.NONE
         mask[-self.random_crop_size:, :] = ImageSegment.NONE
