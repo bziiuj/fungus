@@ -21,7 +21,7 @@ Firstly, you need to calculate parameters for normalization. You can do that by 
 python dataset/normalization.py PATH_TO_IMAGES
 ```
 
-Results will be saved in `results/{means.npy,stds.npy}`.
+Results will be saved in `tmp/{means.npy,stds.npy}`.
 
 Then issue
 
