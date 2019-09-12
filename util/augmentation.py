@@ -24,23 +24,27 @@ class NumpyRotation:
     def __init__(self, angles=[0, 90, 180, 270]):
         self.angles = angles
 
-    def __call__(self, img):
+    def __call__(self, sample):
         angle = random.choice(self.angles)
-        return rotate(img, angle)
+        return rotate(sample[0], angle), rotate(sample[1], angle)
 
 
 class NumpyVerticalFlip:
-    def __call__(self, img):
+    def __call__(self, sample):
+        img, mask = sample
         if np.random.uniform() > 0.5:
             img = np.fliplr(img)
-        return img
+            mask = np.fliplr(mask)
+        return img, mask
 
 
 class NumpyHorizontalFlip:
-    def __call__(self, img):
+    def __call__(self, sample):
+        img, mask = sample
         if np.random.uniform() > 0.5:
             img = np.flipud(img)
-        return img
+            mask = np.flipud(mask)
+        return img, mask
 
 
 class NumpyAffineTransform:
@@ -48,13 +52,15 @@ class NumpyAffineTransform:
         self.scale = scale
         self.shear = shear
 
-    def __call__(self, img):
+    def __call__(self, sample):
+        img, mask = sample
         scale = np.random.uniform(low=self.scale[0], high=self.scale[1])
         shear = np.random.uniform(low=self.shear[0], high=self.shear[1])
         t = AffineTransform(scale=(scale, scale), shear=shear)
         if np.random.uniform() > 0.5:
             img = warp(img, t)
-        return img
+            mask = warp(mask, t)
+        return img, mask
 
 
 class NumpyToTensor:
@@ -108,21 +114,27 @@ def get_augmentation_on_tensor_data(noise_sigma=0.1):
     )
 
 
-def get_augmentation_on_numpy_data(noise_sigma=0.1):
-    means, stds = read_means_and_standard_deviations('tmp/means.npy', 'tmp/stds.npy')
-
+def get_augmentation_on_numpy_data_img_mask():
     return Compose(
         [
             NumpyRotation(),
             NumpyVerticalFlip(),
             NumpyHorizontalFlip(),
-            NumpyAffineTransform(scale=(0.8, 1.2), shear=(-15, 15)),
+            # NumpyAffineTransform(scale=(0.8, 1.2), shear=(-5, 5)),
+        ]
+    )
+
+
+def get_augmentation_on_numpy_data_img(noise_sigma=0.1):
+    means, stds = read_means_and_standard_deviations('tmp/means.npy', 'tmp/stds.npy')
+
+    return Compose(
+        [
             NumpyToTensor(),
             Normalize(means, stds),
             Lambda(lambda x: x + torch.randn(x.size()) * noise_sigma),
         ]
     )
-
 
 '''
 Usage:
