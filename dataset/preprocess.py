@@ -17,10 +17,9 @@ def process(dataset_dir, out_dir):
         img = exposure.rescale_intensity(
             img, in_range=(p5, p95), out_range=(0, 1))
         kind, = image_path.parent.parts[-1:]
-        name = image_path.stem + '.npy'
         save_path = out_dir / kind
         save_path.mkdir(exist_ok=True, parents=True)
-        np.save(out_dir / kind / name, img)
+        np.save(save_path / image_path.stem, img)
 
 
 if __name__ == '__main__':
