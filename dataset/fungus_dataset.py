@@ -78,13 +78,13 @@ class FungusDataset(Dataset):
     def _read_mask(self, image_idx):
         mask_path = self.paths[image_idx]
         mask_path = os.path.join(self.masks_dir, mask_path)
-        return io.imread(mask_path)
+        return np.load(mask_path)
 
     def _read_image_and_class(self, image_idx):
         path = self.paths[image_idx]
         image_class = path.split('/')[-1][:2]
         path = os.path.join(self.pngs_dir, path)
-        return io.imread(path), image_class
+        return np.load(path), image_class
 
     def _is_foreground_patch(self, sequence_idx):
         return (sequence_idx % (self.bg_per_img + self.fg_per_img)) > self.bg_per_img
