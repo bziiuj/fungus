@@ -3,6 +3,7 @@ import warnings
 from enum import IntEnum
 
 import numpy as np
+from scipy.ndimage import zoom
 from skimage import io
 from skimage import transform
 from torch.utils.data import DataLoader
@@ -54,7 +55,8 @@ class FungusDataset(Dataset):
             train=True,
             pngs_dir=None,
             masks_dir=None,
-            reverse=False
+            reverse=False,
+            prescale=None,
     ):
 
         self.transform = transform
@@ -65,6 +67,7 @@ class FungusDataset(Dataset):
         self.pngs_dir = pngs_dir
         self.masks_dir = masks_dir
         self.reverse = reverse
+        self.prescale = prescale
         if not self.pngs_dir or not self.masks_dir:
             raise AttributeError('Paths to pngs and masks must be provided.')
         if self.train:
@@ -93,6 +96,11 @@ class FungusDataset(Dataset):
         image_idx = sequence_idx // (self.bg_per_img + self.fg_per_img)
         image, image_class = self._read_image_and_class(image_idx)
         mask = self._read_mask(image_idx)
+
+        # apply prescaling
+        if self.prescale:
+            image = zoom(image, self.prescale, order=3)
+            mask = zoom(mask, self.prescale, order=0)
 
         # set appropriate offsets in order to choose only full sized patches
         mask[:self.random_crop_size, :] = ImageSegment.NONE
