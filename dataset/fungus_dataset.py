@@ -99,7 +99,7 @@ class FungusDataset(Dataset):
 
         # apply prescaling
         if self.prescale:
-            image = zoom(image, self.prescale, order=3)
+            image = zoom(image, (self.prescale, self.prescale, 1), order=3)
             mask = zoom(mask, self.prescale, order=0)
 
         # set appropriate offsets in order to choose only full sized patches
