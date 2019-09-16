@@ -12,7 +12,7 @@ def process(dataset_dir, out_dir):
     for image_path in tqdm(dataset_dir.glob('**/*.tif')):
         # use freeimage plugin to obtain 16 bits per sample
         img = io.imread(image_path, plugin='freeimage').astype(np.float)
-        img / (2 ** 16 - 1)
+        img = img / (2 ** 16 - 1)
         p5, p95 = np.percentile(img, (5, 95))
         img = exposure.rescale_intensity(
             img, in_range=(p5, p95), out_range=(0, 1))
