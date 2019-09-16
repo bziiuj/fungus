@@ -9,16 +9,9 @@ import seaborn as sns
 import torch
 from matplotlib import gridspec
 from matplotlib import pyplot as plt
-from matplotlib import gridspec
 from scipy.spatial.distance import cdist
 from sklearn import svm
 from sklearn.externals import joblib
-
-import os  # isort:skip
-import sys  # isort:skip
-
-sys.path.insert(0, os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..')))  # isort:skip
 
 from dataset import FungusDataset
 from dataset.normalization import denormalize
@@ -78,7 +71,6 @@ def plot_similarity_mosaic(distances, patches, filepath):
     plt.close()
 
 
-
 def plot_boxplot(bows, labels, filepath):
     f, axes = plt.subplots(5, 2, figsize=(25, 40), sharex=True)
     for i in range(len(FungusDataset.NUMBER_TO_FUNGUS.values())):
@@ -110,7 +102,6 @@ def load_all(config, args, mode):
     return image_patches, feature_matrix, labels
 
 
-
 if __name__ == '__main__':
     logger = get_logger('visual_histograms')
     set_excepthook(logger)
@@ -122,8 +113,10 @@ if __name__ == '__main__':
     CLUSTERS_NUM = 10
 
     # train_image_patches, train_feature_matrix, train_labels = load_all(config, args, 'train')
-    test_image_patches, test_feature_matrix, test_labels = load_all(config, args, 'test')
-    model_path = get_results_path(config.results_path, model_type, args.prefix, str(CLUSTERS_NUM))
+    test_image_patches, test_feature_matrix, test_labels = load_all(
+        config, args, 'test')
+    model_path = get_results_path(
+        config.results_path, model_type, args.prefix, str(CLUSTERS_NUM))
     model = joblib.load(model_path / 'best_model.pkl').best_estimator_
     transformer_name = 'bag_of_words' if args.bow else 'fisher_vector'
     transformer = model.named_steps[transformer_name]
@@ -133,10 +126,9 @@ if __name__ == '__main__':
 
     # compute distances from train and test to gmm clusters
     # train_distances = cdist(
-        # train_feature_matrix.reshape(-1, 256), transformer.gmm_[0].transpose())
+    # train_feature_matrix.reshape(-1, 256), transformer.gmm_[0].transpose())
     # test_distances = cdist(
     #     test_feature_matrix.reshape(-1, 256), transformer.gmm_[0].transpose())
-
 
     # plot_similarity_mosaic(test_distances, test_image_patches, model_path)
 

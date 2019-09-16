@@ -1,9 +1,4 @@
 #!/usr/bin/env python
-import os  # isort:skip
-import sys  # isort:skip
-sys.path.insert(0, os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..')))  # isort:skip
-
 import argparse
 
 import matplotlib.pyplot as plt

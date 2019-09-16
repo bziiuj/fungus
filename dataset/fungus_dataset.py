@@ -3,6 +3,7 @@ import warnings
 from enum import IntEnum
 
 import numpy as np
+from scipy.ndimage import zoom
 from skimage import io
 from skimage import transform
 from torch.utils.data import DataLoader
@@ -11,11 +12,6 @@ from torch.utils.data import Dataset
 from dataset.img_files import test_paths
 from dataset.img_files import train_paths
 from dataset.normalization import normalize_image
-
-import os  # isort:skip
-import sys  # isort:skip
-sys.path.insert(0, os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..')))  # isort:skip
 
 
 class ImageSegment(IntEnum):
@@ -59,7 +55,8 @@ class FungusDataset(Dataset):
             train=True,
             pngs_dir=None,
             masks_dir=None,
-            reverse=False
+            reverse=False,
+            prescale=None,
     ):
 
         self.transform = transform
@@ -70,6 +67,7 @@ class FungusDataset(Dataset):
         self.pngs_dir = pngs_dir
         self.masks_dir = masks_dir
         self.reverse = reverse
+        self.prescale = prescale
         if not self.pngs_dir or not self.masks_dir:
             raise AttributeError('Paths to pngs and masks must be provided.')
         if self.train:
@@ -83,13 +81,13 @@ class FungusDataset(Dataset):
     def _read_mask(self, image_idx):
         mask_path = self.paths[image_idx]
         mask_path = os.path.join(self.masks_dir, mask_path)
-        return io.imread(mask_path)
+        return np.load(mask_path)
 
     def _read_image_and_class(self, image_idx):
         path = self.paths[image_idx]
         image_class = path.split('/')[-1][:2]
         path = os.path.join(self.pngs_dir, path)
-        return io.imread(path), image_class
+        return np.load(path), image_class
 
     def _is_foreground_patch(self, sequence_idx):
         return (sequence_idx % (self.bg_per_img + self.fg_per_img)) > self.bg_per_img
@@ -98,6 +96,11 @@ class FungusDataset(Dataset):
         image_idx = sequence_idx // (self.bg_per_img + self.fg_per_img)
         image, image_class = self._read_image_and_class(image_idx)
         mask = self._read_mask(image_idx)
+
+        # apply prescaling
+        if self.prescale:
+            image = zoom(image, (self.prescale, self.prescale, 1), order=3)
+            mask = zoom(mask, self.prescale, order=0)
 
         # set appropriate offsets in order to choose only full sized patches
         mask[:self.random_crop_size, :] = ImageSegment.NONE

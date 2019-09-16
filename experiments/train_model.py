@@ -7,11 +7,6 @@ import torch
 from sklearn import model_selection
 from sklearn.externals import joblib
 
-import os  # isort:skip
-import sys  # isort:skip
-sys.path.insert(0, os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..')))  # isort:skip
-
 from pipeline import bow_pipeline
 from pipeline import fv_pipeline
 from util.config import load_config
@@ -19,6 +14,7 @@ from util.log import get_logger
 from util.log import set_excepthook
 from util.path import get_results_path
 from util.random import set_seed
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description=__doc__)

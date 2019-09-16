@@ -2,19 +2,14 @@
 import argparse
 import logging
 
-from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-import torch
 import seaborn as sns
+import torch
+from matplotlib import pyplot as plt
 from sklearn import model_selection
 from sklearn.externals import joblib
 from sklearn.manifold import TSNE
-
-import os  # isort:skip
-import sys  # isort:skip
-sys.path.insert(0, os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..')))  # isort:skip
 
 from pipeline import bow_pipeline
 from pipeline import fv_pipeline
@@ -24,8 +19,8 @@ from util.log import set_excepthook
 from util.path import get_results_path
 from util.random import set_seed
 
-
 sns.set()
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -68,7 +63,8 @@ if __name__ == '__main__':
         model_type,
         args.prefix,
         str(args.clusters))
-    model = joblib.load(clusters_results_path / 'best_model.pkl').best_estimator_
+    model = joblib.load(clusters_results_path /
+                        'best_model.pkl').best_estimator_
     step_name = 'bag_of_words' if args.bow else 'fisher_vector'
     transformer = model.named_steps[step_name]
     train_representation = transformer.transform(train_feature_matrix)
@@ -77,8 +73,10 @@ if __name__ == '__main__':
     test_points = TSNE().fit_transform(test_representation)
     train_points = pd.DataFrame(train_points, columns=['x', 'y'])
     test_points = pd.DataFrame(test_points, columns=['x', 'y'])
-    train_points = train_points.assign(train=[True for i in range(train_points.shape[0])])
-    test_points = test_points.assign(train=[False for i in range(test_points.shape[0])])
+    train_points = train_points.assign(
+        train=[True for i in range(train_points.shape[0])])
+    test_points = test_points.assign(
+        train=[False for i in range(test_points.shape[0])])
     points = train_points.append(test_points)
     sns.relplot(x='x', y='y', hue='train', data=points)
     plt.savefig(clusters_results_path / 'tsne.png')

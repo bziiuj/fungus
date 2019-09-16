@@ -6,11 +6,6 @@ to test mode (use test dataset).
 
 Also calculates class statistics and saves them to yaml.
 """
-import os  # isort:skip
-import sys  # isort:skip
-sys.path.insert(0, os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..')))  # isort:skip
-
 import argparse
 
 import numpy as np
@@ -42,6 +37,8 @@ def parse_arguments():
                         help='random crop radius')
     parser.add_argument('--config', default='experiments_config.py',
                         help='path to python module with shared experiment configuration')
+    parser.add_argument('--prescale', default=None, type=float,
+                        help='prescaling factor')
     return parser.parse_args()
 
 
@@ -73,7 +70,8 @@ if __name__ == '__main__':
         random_crop_size=args.size,
         number_of_bg_slices_per_image=config.number_of_bg_slices_per_image,
         number_of_fg_slices_per_image=config.number_of_fg_slices_per_image,
-        train=not args.test)
+        train=not args.test,
+        prescale=args.prescale)
     loader = data.DataLoader(
         dataset,
         batch_size=config.batch_size,

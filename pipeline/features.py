@@ -27,7 +27,7 @@ def extract_features(images, device, extractor=None):
     """
     if not extractor:
         extractor = models.alexnet(pretrained=True).features.eval().to(device)
-    features = extractor(images)
+    features = extractor(images.float())
     N, C, W, H = features.size()
     print(N, C, W, H)
     return features.reshape(N, C, W * H).transpose_(2, 1)
@@ -46,7 +46,8 @@ def compute_feature_matrix(loader, device, extractor=None):
         feature_matrix = torch.tensor([], dtype=torch.float, device=device)
         labels = torch.tensor([], dtype=torch.long)
         for i, sample in enumerate(tqdm(loader)):
-            image_patches = torch.cat((image_patches, sample['image']), dim=0)
+            image_patches = torch.cat(
+                (image_patches, sample['image'].float()), dim=0)
             X = sample['image'].to(device)
             y_true = sample['class']
             X_features = extract_features(X, device, extractor)

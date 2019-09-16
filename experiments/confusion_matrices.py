@@ -11,11 +11,6 @@ from sklearn.externals import joblib
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
 
-import os  # isort:skip
-import sys  # isort:skip
-sys.path.insert(0, os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..')))  # isort:skip
-
 from dataset import FungusDataset
 from util.config import load_config
 from util.log import get_logger

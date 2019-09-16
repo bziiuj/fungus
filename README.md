@@ -2,7 +2,7 @@
 
 ## Database
 
-Database can be acquired via: https://drive.google.com/file/d/1-CjXE-HO3xz36x_XNJVDTRV89xDnjLlu/view?usp=sharing 
+Database can be acquired via: https://drive.google.com/file/d/1-CjXE-HO3xz36x_XNJVDTRV89xDnjLlu/view?usp=sharing
 
 ## Conda environment
 
@@ -10,6 +10,7 @@ Conda environment can be set up by issuing:
 
 ```
 conda env create -f environment.yml
+conda develop .
 ```
 
 ## Running experiments
@@ -20,7 +21,7 @@ Firstly, you need to calculate parameters for normalization. You can do that by 
 python dataset/normalization.py PATH_TO_IMAGES
 ```
 
-Results will be saved in `results/{means.npy,stds.npy}`.
+Results will be saved in `tmp/{means.npy,stds.npy}`.
 
 Then issue
 
