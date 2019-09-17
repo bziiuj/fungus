@@ -5,13 +5,14 @@ import numpy as np
 from skimage import exposure
 from skimage import io
 from tqdm import tqdm
+import imageio
 
 
 def process(dataset_dir, out_dir):
     out_dir.mkdir(exist_ok=True, parents=True)
     for image_path in tqdm(dataset_dir.glob('**/*.tif')):
         # use freeimage plugin to obtain 16 bits per sample
-        img = io.imread(image_path, plugin='freeimage').astype(np.float)
+        img = imageio.imread(image_path).astype(np.float)
         img = img / (2 ** 16 - 1)
         p5, p95 = np.percentile(img, (5, 95))
         img = exposure.rescale_intensity(
