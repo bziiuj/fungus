@@ -12,6 +12,8 @@ from torch.utils.data import Dataset
 from dataset.img_files import test_paths
 from dataset.img_files import train_paths
 from dataset.normalization import normalize_image
+from util.augmentation import get_augmentation_on_numpy_data_img
+from util.augmentation import get_augmentation_on_numpy_data_img_mask
 
 
 class ImageSegment(IntEnum):
@@ -48,7 +50,7 @@ class FungusDataset(Dataset):
 
     def __init__(
             self,
-            transform=normalize_image,
+            transform=None,
             random_crop_size=125,
             number_of_bg_slices_per_image=0,
             number_of_fg_slices_per_image=8,
@@ -57,9 +59,14 @@ class FungusDataset(Dataset):
             masks_dir=None,
             reverse=False,
             prescale=None,
+            use_augmentation=True,
     ):
 
         self.transform = transform
+        self.use_augmentation = use_augmentation
+        if use_augmentation:
+            self.transform = get_augmentation_on_numpy_data_img()
+            self.transform_img_mask = get_augmentation_on_numpy_data_img_mask()
         self.random_crop_size = random_crop_size
         self.bg_per_img = number_of_bg_slices_per_image
         self.fg_per_img = number_of_fg_slices_per_image
@@ -102,6 +109,10 @@ class FungusDataset(Dataset):
             image = zoom(image, (self.prescale, self.prescale, 1), order=3)
             mask = zoom(mask, self.prescale, order=0)
 
+        if self.use_augmentation:
+            image, mask = self.transform_img_mask((image, mask))
+            mask = np.around(mask * 255).astype(np.uint8)
+
         # set appropriate offsets in order to choose only full sized patches
         mask[:self.random_crop_size, :] = ImageSegment.NONE
         mask[-self.random_crop_size:, :] = ImageSegment.NONE
@@ -136,6 +147,7 @@ class FungusDataset(Dataset):
         image = image[y - self.random_crop_size:y + self.random_crop_size,
                       x - self.random_crop_size:x + self.random_crop_size,
                       :]
+
         if self.transform:
             image = self.transform(image)
         return {
