@@ -68,8 +68,8 @@ if __name__ == '__main__':
         pngs_dir=args.pngs_path,
         masks_dir=args.masks_path,
         random_crop_size=args.size,
-        number_of_bg_slices_per_image=config.number_of_bg_slices_per_image,
         number_of_fg_slices_per_image=config.number_of_fg_slices_per_image,
+        number_of_bg_slices_per_image=config.number_of_bg_slices_per_image,
         train=not args.test,
         prescale=args.prescale)
     loader = data.DataLoader(

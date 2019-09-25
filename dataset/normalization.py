@@ -6,6 +6,8 @@ import numpy as np
 from skimage import io
 from torchvision import transforms
 
+from util.augmentation import NumpyToTensor
+
 
 class Denormalize(object):
     def __init__(self, mean, std):
@@ -26,11 +28,17 @@ def denormalize(patch):
     return patch
 
 
+def get_normalization_transform():
+    means, stds = read_means_and_standard_deviations(
+        'tmp/means.npy', 'tmp/stds.npy')
+    return transforms.Normalize(means, stds)
+
+
 def normalize_image(img):
     means, stds = read_means_and_standard_deviations(
         'tmp/means.npy', 'tmp/stds.npy')
     transform = transforms.Compose([
-        transforms.ToTensor(),
+        NumpyToTensor(),
         transforms.Normalize(means, stds),
     ])
     return transform(img)

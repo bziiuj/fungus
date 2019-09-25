@@ -3,7 +3,6 @@ import warnings
 from enum import IntEnum
 
 import numpy as np
-from scipy.ndimage import zoom
 from skimage import io
 from skimage import transform
 from torch.utils.data import DataLoader
@@ -12,8 +11,6 @@ from torch.utils.data import Dataset
 from dataset.img_files import test_paths
 from dataset.img_files import train_paths
 from dataset.normalization import normalize_image
-from util.augmentation import get_augmentation_on_numpy_data_img
-from util.augmentation import get_augmentation_on_numpy_data_img_mask
 
 
 class ImageSegment(IntEnum):
@@ -50,32 +47,28 @@ class FungusDataset(Dataset):
 
     def __init__(
             self,
-            transform=None,
-            random_crop_size=125,
-            number_of_bg_slices_per_image=0,
-            number_of_fg_slices_per_image=8,
-            train=True,
-            pngs_dir=None,
+            imgs_dir=None,
             masks_dir=None,
+            random_crop_size=125,
+            number_of_fg_slices_per_image=8,
+            number_of_bg_slices_per_image=0,
+            train=True,
             reverse=False,
+            transform=None,
             prescale=None,
-            use_augmentation=True,
+            augmentation=None,
     ):
-
-        self.transform = transform
-        self.use_augmentation = use_augmentation
-        if use_augmentation:
-            self.transform = get_augmentation_on_numpy_data_img()
-            self.transform_img_mask = get_augmentation_on_numpy_data_img_mask()
-        self.random_crop_size = random_crop_size
-        self.bg_per_img = number_of_bg_slices_per_image
-        self.fg_per_img = number_of_fg_slices_per_image
-        self.train = train
-        self.pngs_dir = pngs_dir
+        self.imgs_dir = imgs_dir
         self.masks_dir = masks_dir
+        self.random_crop_size = random_crop_size
+        self.fg_per_img = number_of_fg_slices_per_image
+        self.bg_per_img = number_of_bg_slices_per_image
+        self.train = train
         self.reverse = reverse
+        self.transform = transform
         self.prescale = prescale
-        if not self.pngs_dir or not self.masks_dir:
+        self.augmentation = augmentation
+        if not self.imgs_dir or not self.masks_dir:
             raise AttributeError('Paths to pngs and masks must be provided.')
         if self.train:
             self.paths = train_paths if not self.reverse else test_paths
@@ -93,7 +86,7 @@ class FungusDataset(Dataset):
     def _read_image_and_class(self, image_idx):
         path = self.paths[image_idx]
         image_class = path.split('/')[-1][:2]
-        path = os.path.join(self.pngs_dir, path)
+        path = os.path.join(self.imgs_dir, path)
         return np.load(path), image_class
 
     def _is_foreground_patch(self, sequence_idx):
@@ -106,12 +99,12 @@ class FungusDataset(Dataset):
 
         # apply prescaling
         if self.prescale:
-            image = zoom(image, (self.prescale, self.prescale, 1), order=3)
-            mask = zoom(mask, self.prescale, order=0)
+            image = transform.rescale(image, self.prescale, mode='reflect')
+            mask = transform.rescale(
+                mask, self.prescale, mode='reflect', order=0, preserve_range=True)
 
-        if self.use_augmentation:
-            image, mask = self.transform_img_mask((image, mask))
-            mask = np.around(mask * 255).astype(np.uint8)
+        if self.augmentation:
+            image, mask = self.augmentation((image, mask))
 
         # set appropriate offsets in order to choose only full sized patches
         mask[:self.random_crop_size, :] = ImageSegment.NONE

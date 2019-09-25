@@ -5,21 +5,31 @@ import torch
 from skimage.transform import AffineTransform
 from skimage.transform import rotate
 from skimage.transform import warp
+from skimage.util import img_as_ubyte
+from skimage.util import random_noise
 from torchvision.transforms import Compose
 from torchvision.transforms import Lambda
 from torchvision.transforms import Normalize
 
-from dataset.normalization import read_means_and_standard_deviations
+
+class NumpyGaussianNoise:
+    def __init__(self, sigma=0.1):
+        self.sigma = sigma
+
+    def __call__(self, img):
+        return random_noise(img, mode='gaussian', var=self.sigma)
 
 
 class NumpyRotation:
-
     def __init__(self, angles=[0, 90, 180, 270]):
         self.angles = angles
 
     def __call__(self, sample):
+        img, mask = sample
         angle = random.choice(self.angles)
-        return rotate(sample[0], angle), rotate(sample[1], angle)
+        img = rotate(img, angle)
+        mask = rotate(mask, angle, order=0, preserve_range=True)
+        return img, mask
 
 
 class NumpyVerticalFlip:
@@ -52,7 +62,7 @@ class NumpyAffineTransform:
         t = AffineTransform(scale=(scale, scale), shear=shear)
         if np.random.uniform() > 0.5:
             img = warp(img, t, mode='reflect')
-            mask = warp(mask, t, mode='reflect')
+            mask = warp(mask, t, mode='reflect', order=0, preserve_range=True)
         return img, mask
 
 
@@ -62,28 +72,3 @@ class NumpyToTensor:
         img = torch.Tensor(np.ascontiguousarray(
             img.transpose((2, 0, 1)))).float()
         return img
-
-
-def get_augmentation_on_numpy_data_img_mask():
-    return Compose(
-        [
-            NumpyRotation(),
-            NumpyVerticalFlip(),
-            NumpyHorizontalFlip(),
-            NumpyAffineTransform(scale=(0.8, 1.2), shear=(
-                np.deg2rad(-15), np.deg2rad(15))),
-        ]
-    )
-
-
-def get_augmentation_on_numpy_data_img(noise_sigma=0.1):
-    means, stds = read_means_and_standard_deviations(
-        'tmp/means.npy', 'tmp/stds.npy')
-
-    return Compose(
-        [
-            NumpyToTensor(),
-            Normalize(means, stds),
-            Lambda(lambda x: x + torch.randn(x.size()) * noise_sigma),
-        ]
-    )
