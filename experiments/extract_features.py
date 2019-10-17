@@ -12,9 +12,12 @@ import numpy as np
 import torch
 import yaml
 from torch.utils import data
+from torchvision.transforms import Compose
 
 from dataset import FungusDataset
+from dataset.normalization import get_normalization_transform
 from pipeline import features
+from util.augmentation import *
 from util.config import load_config
 from util.log import get_logger
 from util.log import set_excepthook
@@ -26,7 +29,7 @@ def parse_arguments():
     """Builds ArgumentParser and uses it to parse command line options."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        'pngs_path', help='absolute path to directory with pngs')
+        'imgs_path', help='absolute path to directory with pngs')
     parser.add_argument(
         'masks_path', help='absolute path to directory with masks')
     parser.add_argument('--test', default=False,
@@ -39,6 +42,8 @@ def parse_arguments():
                         help='path to python module with shared experiment configuration')
     parser.add_argument('--prescale', default=None, type=float,
                         help='prescaling factor')
+    parser.add_argument('--augment', action='store_true',
+                        help='enable augmentation')
     return parser.parse_args()
 
 
@@ -58,20 +63,43 @@ if __name__ == '__main__':
     config = load_config(args.config)
     set_seed(config.seed)
     mode = 'test' if args.test else 'train'
+    if args.augment:
+        args.prefix += '_aug'
     results_path = get_results_path(
         config.results_path, 'features', args.prefix, mode)
     logger.info('Extracting features for prefix %s in %s mode',
                 args.prefix, mode)
 
+    transform = [
+        NumpyToTensor(),
+        get_normalization_transform(),
+    ]
+    if args.augment:
+        transform.insert(0, NumpyGaussianNoise(sigma=0.01))
+    transform = Compose(transform)
+
+    augmentation = None
+    if args.augment:
+        augmentation = Compose([
+            NumpyVerticalFlip(),
+            NumpyHorizontalFlip(),
+            # NumpyAffineTransform(
+            #    scale=(0.8, 1.2),
+            #    shear=(np.deg2rad(-15), np.deg2rad(15))
+            # )
+        ])
+
     device = features.get_cuda()
     dataset = FungusDataset(
-        pngs_dir=args.pngs_path,
+        imgs_dir=args.imgs_path,
         masks_dir=args.masks_path,
         random_crop_size=args.size,
         number_of_fg_slices_per_image=config.number_of_fg_slices_per_image,
         number_of_bg_slices_per_image=config.number_of_bg_slices_per_image,
         train=not args.test,
-        prescale=args.prescale)
+        transform=transform,
+        prescale=args.prescale,
+        augmentation=augmentation)
     loader = data.DataLoader(
         dataset,
         batch_size=config.batch_size,

@@ -24,6 +24,8 @@ def parse_arguments():
                         action='store_true', help='enable bow pipeline')
     parser.add_argument('--config', default='experiments_config.py',
                         help='path to python module with shared experiment configuration')
+    parser.add_argument('--augment', action='store_true',
+                        help='enable augmentation')
     return parser.parse_args()
 
 
@@ -37,6 +39,10 @@ if __name__ == '__main__':
     model = 'bow' if args.bow else 'fv'
     features_path = get_results_path(
         config.results_path, 'features', args.prefix, 'train')
+    if args.augment:
+        args.prefix += '_aug'
+        aug_features_path = get_results_path(
+            config.results_path, 'features', args.prefix, 'train')
     train_results_path = get_results_path(
         config.results_path, model, args.prefix, 'train')
     train_results_path.mkdir(parents=True, exist_ok=True)
@@ -45,6 +51,11 @@ if __name__ == '__main__':
 
     feature_matrix = np.load(features_path / 'feature_matrix.npy')
     labels = np.load(features_path / 'labels.npy')
+    if args.augment:
+        aug_feature_matrix = np.load(aug_features_path / 'feature_matrix.npy')
+        aug_labels = np.load(aug_features_path / 'labels.npy')
+        feature_matrix = np.concatenate((feature_matrix, aug_feature_matrix))
+        labels = np.concatenate((labels, aug_labels))
 
     pipeline = bow_pipeline if args.bow else fv_pipeline
     param_grid = config.bow_param_grid if args.bow else config.fv_param_grid

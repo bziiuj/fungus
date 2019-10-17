@@ -100,8 +100,9 @@ class FungusDataset(Dataset):
         # apply prescaling
         if self.prescale:
             image = transform.rescale(image, self.prescale, mode='reflect')
-            mask = transform.rescale(
-                mask, self.prescale, mode='reflect', order=0, preserve_range=True)
+            # mask = transform.rescale(
+            #    mask, self.prescale, mode='reflect', order=0, preserve_range=True)
+        print(image.shape, mask.shape)
 
         if self.augmentation:
             image, mask = self.augmentation((image, mask))

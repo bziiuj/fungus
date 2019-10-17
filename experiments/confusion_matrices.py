@@ -69,6 +69,8 @@ def parse_arguments():
                         action='store_true', help='enable bow pipeline')
     parser.add_argument('--config', default='experiments_config.py',
                         help='path to python module with shared experiment configuration')
+    parser.add_argument('--augment', action='store_true',
+                        help='enable augmentation')
     return parser.parse_args()
 
 
@@ -92,10 +94,33 @@ def plot_all(path, mode, cnf_matrix, proba_cnf_matrix):
                     path / 'probability_confusion_matrix.png')
 
 
-def process(features_path, model_path, results_path, mode):
-    pipeline = joblib.load(model_path / 'best_model.pkl')
+def process(features_path, model_path, results_path, mode, augment):
+    model_path = str(model_path)
+    if augment:
+        model_path = str(model_path).split('/')
+        model_path[-2] += '_aug'
+        model_path = '/'.join(model_path)
+        results_path = str(results_path).split('/')
+        results_path[-2] += '_aug'
+        results_path = '/'.join(results_path)
+        from pathlib import Path
+        results_path = Path(results_path)
+    print(features_path)
+    print(model_path)
+    print(results_path)
+    pipeline = joblib.load(model_path + '/best_model.pkl')
     feature_matrix = np.load(features_path / 'feature_matrix.npy')
     y_true = np.load(features_path / 'labels.npy')
+    if augment:
+        if mode == 'train':
+            aug_features_path = '/'.join(str(features_path).split('/')[0:-1])
+            aug_features_path += '_aug/train'
+            aug_feature_matrix = np.load(
+                aug_features_path + '/feature_matrix.npy')
+            feature_matrix = np.concatenate(
+                (feature_matrix, aug_feature_matrix))
+            aug_y_true = np.load(aug_features_path + '/labels.npy')
+            y_true = np.concatenate((y_true, aug_y_true))
 
     y_pred = pipeline.predict(feature_matrix)
     cnf_matrix = confusion_matrix(y_true, y_pred)
@@ -116,8 +141,6 @@ if __name__ == '__main__':
     config = load_config(args.config)
     set_seed(config.seed)
     model = 'bow' if args.bow else 'fv'
-    features_path = get_results_path(
-        config.results_path, 'features', args.prefix, 'train')
     train_results_path = get_results_path(
         config.results_path, model, args.prefix, 'train')
     test_results_path = get_results_path(
@@ -129,6 +152,7 @@ if __name__ == '__main__':
     logger.info('Plotting charts for prefix %s with %s model',
                 args.prefix, model)
     process(train_features_path, train_results_path,
-            train_results_path, 'train')
-    process(test_features_path, train_results_path, test_results_path, 'test')
+            train_results_path, 'train', args.augment)
+    process(test_features_path, train_results_path,
+            test_results_path, 'test', args.augment)
     logger.info('Plotting successfull')
