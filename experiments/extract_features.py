@@ -44,6 +44,8 @@ def parse_arguments():
                         help='prescaling factor')
     parser.add_argument('--augment', action='store_true',
                         help='enable augmentation')
+    parser.add_argument('--model', default='alexnet',
+                        help='model to use; can be one of alexnet, resnet18')
     return parser.parse_args()
 
 
@@ -66,7 +68,7 @@ if __name__ == '__main__':
     if args.augment:
         args.prefix += '_aug'
     results_path = get_results_path(
-        config.results_path, 'features', args.prefix, mode)
+        config.results_path, args.model, args.prefix, mode)
     logger.info('Extracting features for prefix %s in %s mode',
                 args.prefix, mode)
 

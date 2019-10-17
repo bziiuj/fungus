@@ -25,6 +25,8 @@ def parse_arguments():
                         help='path to python module with shared experiment configuration')
     parser.add_argument('--augment', action='store_true',
                         help='enable augmentation')
+    parser.add_argument('--features', default='alexnet',
+                        help='which feature extraction method to use; can be one of alexnet, resnet18, inceptionv3')
     return parser.parse_args()
 
 
@@ -36,11 +38,11 @@ if __name__ == '__main__':
     config = load_config(args.config)
     set_seed(config.seed)
     features_path = get_results_path(
-        config.results_path, 'features', args.prefix, 'train')
+        config.results_path, args.features, args.prefix, 'train')
     if args.augment:
         args.prefix += '_aug'
         aug_features_path = get_results_path(
-            config.results_path, 'features', args.prefix, 'train')
+            config.results_path, args.features, args.prefix, 'train')
     train_results_path = get_results_path(
         config.results_path, args.model, args.prefix, 'train')
     train_results_path.mkdir(parents=True, exist_ok=True)

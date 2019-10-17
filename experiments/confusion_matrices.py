@@ -65,12 +65,14 @@ def plot_accuracy_bars(cnf_matrix, classes, title, filename):
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--prefix', help='input file prefix')
-    parser.add_argument('--model', default='fv',
+    parser.add_argument('--model', default='fv_svc',
                         help='model to use; can be one of fv_svc, bow_svc, fv_rf, bow_rf')
     parser.add_argument('--config', default='experiments_config.py',
                         help='path to python module with shared experiment configuration')
     parser.add_argument('--augment', action='store_true',
                         help='enable augmentation')
+    parser.add_argument('--features', default='alexnet',
+                        help='which feature extraction method to use; can be one of alexnet, resnet18, inceptionv3')
     return parser.parse_args()
 
 
@@ -145,9 +147,9 @@ if __name__ == '__main__':
     test_results_path = get_results_path(
         config.results_path, args.model, args.prefix, 'test')
     train_features_path = get_results_path(
-        config.results_path, 'features', args.prefix, 'train')
+        config.results_path, args.features, args.prefix, 'train')
     test_features_path = get_results_path(
-        config.results_path, 'features', args.prefix, 'test')
+        config.results_path, args.features, args.prefix, 'test')
     logger.info('Plotting charts for prefix %s with %s model',
                 args.prefix, args.model)
     process(train_features_path, train_results_path,
