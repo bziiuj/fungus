@@ -36,7 +36,6 @@ def normalize_image(img):
     means, stds = read_means_and_standard_deviations(
         'tmp/means.npy', 'tmp/stds.npy')
     transform = transforms.Compose([
-        transforms.ToTensor(),
         transforms.Normalize(means, stds),
     ])
     return transform(img)
