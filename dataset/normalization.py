@@ -1,12 +1,13 @@
 import argparse
 import functools
 import os
+from pathlib import Path
 
 import numpy as np
-from skimage import io
 from torchvision import transforms
 
 from util.augmentation import NumpyToTensor
+from util.io import read_img
 
 
 class Denormalize(object):
@@ -49,25 +50,25 @@ def read_means_and_standard_deviations(means_path, stds_path):
     return np.load(means_path), np.load(stds_path)
 
 
-def compute_means_and_standard_deviations(pngs_dir):
+def compute_means_and_standard_deviations(imgs_dir):
     from dataset.img_files import train_paths
     means, stds = [], []
     for path in train_paths:
-        full_path = os.path.join(pngs_dir, path)
-        img = io.imread(full_path)
+        full_path = imgs_dir / path
+        img = read_img(full_path)
         means.append(np.mean(img, axis=(0, 1)))
         stds.append(np.std(img, axis=(0, 1)))
     means = np.array(means)
     stds = np.array(stds)
-    return np.mean(means, axis=0) / 255.0, np.std(stds, axis=0) / 255.0
+    return np.mean(means, axis=0), np.std(stds, axis=0)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        'pngs_dir', help='absolute path to directory with pngs')
+        'imgs_dir', help='absolute path to directory with imgs')
     args = parser.parse_args()
-    means, stds = compute_means_and_standard_deviations(args.pngs_dir)
+    means, stds = compute_means_and_standard_deviations(Path(args.imgs_dir))
     print(means, stds)
     np.save('tmp/means.npy', means)
     np.save('tmp/stds.npy', stds)

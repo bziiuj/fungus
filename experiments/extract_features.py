@@ -40,8 +40,6 @@ def parse_arguments():
                         help='random crop radius')
     parser.add_argument('--config', default='experiments_config.py',
                         help='path to python module with shared experiment configuration')
-    parser.add_argument('--prescale', default=None, type=float,
-                        help='prescaling factor')
     parser.add_argument('--augment', action='store_true',
                         help='enable augmentation')
     parser.add_argument('--model', default='alexnet',
@@ -69,8 +67,12 @@ if __name__ == '__main__':
         args.prefix += '_aug'
     results_path = get_results_path(
         config.results_path, args.model, args.prefix, mode)
-    logger.info('Extracting features for prefix %s in %s mode',
-                args.prefix, mode)
+    logger.info(('Extracting features...\n'
+                 'prefix: %s\n'
+                 'mode: %s\n'
+                 'augmentation: %s\n'
+                 'model: %s'),
+                args.prefix, mode, args.augment, args.model)
 
     transform = [
         NumpyToTensor(),
@@ -100,7 +102,6 @@ if __name__ == '__main__':
         number_of_bg_slices_per_image=config.number_of_bg_slices_per_image,
         train=not args.test,
         transform=transform,
-        prescale=args.prescale,
         augmentation=augmentation)
     loader = data.DataLoader(
         dataset,

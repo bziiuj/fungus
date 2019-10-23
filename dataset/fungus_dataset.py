@@ -1,9 +1,9 @@
 import os
 import warnings
 from enum import IntEnum
+from pathlib import Path
 
 import numpy as np
-from skimage import io
 from skimage import transform
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
@@ -11,6 +11,8 @@ from torch.utils.data import Dataset
 from dataset.img_files import test_paths
 from dataset.img_files import train_paths
 from dataset.normalization import normalize_image
+from util.io import read_img
+from util.io import read_mask
 
 
 class ImageSegment(IntEnum):
@@ -55,7 +57,6 @@ class FungusDataset(Dataset):
             train=True,
             reverse=False,
             transform=None,
-            prescale=None,
             augmentation=None,
     ):
         self.imgs_dir = imgs_dir
@@ -66,7 +67,6 @@ class FungusDataset(Dataset):
         self.train = train
         self.reverse = reverse
         self.transform = transform
-        self.prescale = prescale
         self.augmentation = augmentation
         if not self.imgs_dir or not self.masks_dir:
             raise AttributeError('Paths to pngs and masks must be provided.')
@@ -81,13 +81,15 @@ class FungusDataset(Dataset):
     def _read_mask(self, image_idx):
         mask_path = self.paths[image_idx]
         mask_path = os.path.join(self.masks_dir, mask_path)
-        return np.load(mask_path)
+        mask = read_mask(Path(mask_path))
+        return mask
 
     def _read_image_and_class(self, image_idx):
         path = self.paths[image_idx]
         image_class = path.split('/')[-1][:2]
         path = os.path.join(self.imgs_dir, path)
-        return np.load(path), image_class
+        img = read_img(Path(path))
+        return img, image_class
 
     def _is_foreground_patch(self, sequence_idx):
         return (sequence_idx % (self.bg_per_img + self.fg_per_img)) > self.bg_per_img
@@ -96,13 +98,6 @@ class FungusDataset(Dataset):
         image_idx = sequence_idx // (self.bg_per_img + self.fg_per_img)
         image, image_class = self._read_image_and_class(image_idx)
         mask = self._read_mask(image_idx)
-
-        # apply prescaling
-        if self.prescale:
-            image = transform.rescale(image, self.prescale, mode='reflect')
-            # mask = transform.rescale(
-            #    mask, self.prescale, mode='reflect', order=0, preserve_range=True)
-        print(image.shape, mask.shape)
 
         if self.augmentation:
             image, mask = self.augmentation((image, mask))

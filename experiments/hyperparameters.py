@@ -19,7 +19,7 @@ def parse_arguments():
     """Builds ArgumentParser and uses it to parse command line options."""
     parser = argparse.ArgumentParser()
     parser.add_argument('--prefix', default='', help='input file prefix')
-    parser.add_argument('--model', default='fv',
+    parser.add_argument('--model', default='fv_svc',
                         help='model to use; can be one of fv_svc, bow_svc, fv_rf, bow_rf')
     parser.add_argument('--config', default='experiments_config.py',
                         help='path to python module with shared experiment configuration')
