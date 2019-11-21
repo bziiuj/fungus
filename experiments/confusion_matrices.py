@@ -132,7 +132,7 @@ def process(features_path, model_path, results_path, mode, augment):
 
     results_path.mkdir(parents=True, exist_ok=True)
     plot_all(results_path, mode, cnf_matrix, proba_cnf_matrix)
-    print(accuracy_score(y_true, y_pred))
+    return accuracy_score(y_true, y_pred)
 
 
 if __name__ == '__main__':
@@ -150,10 +150,14 @@ if __name__ == '__main__':
         config.results_path, args.features, args.prefix, 'train')
     test_features_path = get_results_path(
         config.results_path, args.features, args.prefix, 'test')
+    model_path = get_results_path(
+        config.results_path, args.features, str(args.model) + '_' + str(args.prefix), 'train')
     logger.info('Plotting charts for prefix %s with %s model',
                 args.prefix, args.model)
-    process(train_features_path, train_results_path,
-            train_results_path, 'train', args.augment)
-    process(test_features_path, train_results_path,
-            test_results_path, 'test', args.augment)
+    acc = process(train_features_path, model_path,
+                  train_results_path, 'train', args.augment)
+    logger.info('Train {}'.format(acc))
+    acc = process(test_features_path, model_path,
+                  test_results_path, 'test', args.augment)
+    logger.info('Test {}'.format(acc))
     logger.info('Plotting successfull')

@@ -44,7 +44,7 @@ if __name__ == '__main__':
         aug_features_path = get_results_path(
             config.results_path, args.features, args.prefix, 'train')
     train_results_path = get_results_path(
-        config.results_path, args.model, args.prefix, 'train')
+        config.results_path, args.features, str(args.model) + '_' + str(args.prefix), 'train')
     train_results_path.mkdir(parents=True, exist_ok=True)
     logger.info('Fitting hyperparameters for prefix %s with %s model',
                 args.prefix, args.model)
