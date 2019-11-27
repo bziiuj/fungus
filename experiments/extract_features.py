@@ -44,6 +44,8 @@ def parse_arguments():
                         help='enable augmentation')
     parser.add_argument('--model', default='alexnet',
                         help='model to use; can be one of alexnet, resnet18')
+    parser.add_argument('--reverse', default=False,
+                        action='store_true', help='swap train and test subsets')
     return parser.parse_args()
 
 
@@ -102,7 +104,8 @@ if __name__ == '__main__':
         number_of_bg_slices_per_image=config.number_of_bg_slices_per_image,
         train=not args.test,
         transform=transform,
-        augmentation=augmentation)
+        augmentation=augmentation,
+        reverse=args.reverse)
     loader = data.DataLoader(
         dataset,
         batch_size=config.batch_size,
