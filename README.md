@@ -13,7 +13,7 @@ conda env create -f environment.yml
 conda develop .
 ```
 
-## Running experiments
+## Training
 
 Firstly, you need to calculate parameters for normalization. You can do that by invoking
 
@@ -26,13 +26,19 @@ Results will be saved in `tmp/{means.npy,stds.npy}`.
 Then issue
 
 ```
-python experiments/extract_features.py PATH_TO_IMAGES PATH_TO_MASKS --prefix PREFIX --size PATCH_SIZE
-python experiments/extract_features.py PATH_TO_IMAGES PATH_TO_MASKS --prefix PREFIX --size PATCH_SIZE --test
-python experiments/hyperparameters.py --prefix PREFIX
-python experiments/confusion_matrices.py --prefix PREFIX
+python experiments/extract_features.py PATH_TO_IMAGES PATH_TO_MASKS --prefix PREFIX --size PATCH_SIZE --model MODEL
+python experiments/extract_features.py PATH_TO_IMAGES PATH_TO_MASKS --prefix PREFIX --size PATCH_SIZE --model MODEL --test
+python experiments/hyperparameters.py --prefix PREFIX --features FEATURES --model MODEL
+python experiments/confusion_matrices.py --prefix PREFIX --features FEATURES --model MODEL
 ```
 
 Parameters meaning can be checked in each script's documentation.
+
+## Evaluation
+
+In order to inspect our model check out `showcase/examine_model.ipynb`.
+
+## Other
 
 To run the experiments with neural networks, use branch `feature/neural_networks`.
 
