@@ -7,7 +7,7 @@ import torch
 from sklearn import model_selection
 from sklearn.externals import joblib
 
-from pipeline import pipelines
+from pipeline.models import pipelines
 from util.config import load_config
 from util.log import get_logger
 from util.log import set_excepthook
