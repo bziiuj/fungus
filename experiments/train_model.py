@@ -7,8 +7,8 @@ import torch
 from sklearn import model_selection
 from sklearn.externals import joblib
 
-from pipeline import bow_pipeline
-from pipeline import fv_pipeline
+from pipeline import bow
+from pipeline import fisher_vector_transformer
 from util.config import load_config
 from util.log import get_logger
 from util.log import set_excepthook
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     logger.info('Fitting model...')  # add config
     feature_matrix = np.load(train_features_path / 'feature_matrix.npy')
     labels = np.load(train_features_path / 'labels.npy')
-    pipeline = bow_pipeline if args.bow else fv_pipeline
+    pipeline = bow if args.bow else fisher_vector_transformer
     if args.bow:
         param_grid = config.bow_param_grid
         for i in range(2):
